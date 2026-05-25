@@ -154,6 +154,7 @@ export function DiceScene({
         
         {/* Dynamic Physics sandbox */}
         <Physics 
+          key={rollId}
           gravity={[0, -gravityValue, 0]} 
           defaultContactMaterial={{ friction: 0.12, restitution: restitutionValue }}
         >

@@ -7,14 +7,29 @@ interface KeepZoneProps {
 }
 
 export function KeepZone({ keptDice, hasOne, hasFour }: KeepZoneProps) {
-  // Authoritative visual sorting: Snap 1 and 4 to the far-left
-  const sortedKept = [...keptDice].sort((a, b) => {
-    if (a === 1 && b !== 1) return -1;
-    if (b === 1 && a !== 1) return 1;
-    if (a === 4 && b !== 4) return -1;
-    if (b === 4 && a !== 4) return 1;
-    return a - b; // Sort others ascending
-  });
+  // Authoritative visual sorting: Snap only one 1 and one 4 to the far-left
+  const keptCopy = [...keptDice];
+  
+  const oneIdx = keptCopy.indexOf(1);
+  const qOne = oneIdx !== -1 ? keptCopy.splice(oneIdx, 1)[0] : null;
+
+  const fourIdx = keptCopy.indexOf(4);
+  const qFour = fourIdx !== -1 ? keptCopy.splice(fourIdx, 1)[0] : null;
+
+  keptCopy.sort((a, b) => a - b);
+
+  const sortedKept: number[] = [];
+  let highlightedCount = 0;
+
+  if (qOne !== null) {
+    sortedKept.push(qOne);
+    highlightedCount++;
+  }
+  if (qFour !== null) {
+    sortedKept.push(qFour);
+    highlightedCount++;
+  }
+  sortedKept.push(...keptCopy);
 
   // Create placeholders for up to 6 dice
   const placeholders = Array.from({ length: 6 });
@@ -54,7 +69,7 @@ export function KeepZone({ keptDice, hasOne, hasFour }: KeepZoneProps) {
       }}>
         {placeholders.map((_, idx) => {
           const val = sortedKept[idx];
-          const isQVal = val === 1 || val === 4;
+          const isHighlighted = val && idx < highlightedCount;
 
           return (
             <div 
@@ -62,9 +77,9 @@ export function KeepZone({ keptDice, hasOne, hasFour }: KeepZoneProps) {
               style={{
                 width: '50px',
                 height: '50px',
-                border: `2px solid ${val ? (isQVal ? '#00ff66' : 'var(--crt-border)') : 'var(--crt-border-muted)'}`,
+                border: `2px solid ${val ? (isHighlighted ? '#00ff66' : 'var(--crt-border)') : 'var(--crt-border-muted)'}`,
                 background: val ? 'rgba(0, 255, 102, 0.05)' : 'rgba(0,0,0,0.8)',
-                boxShadow: val ? (isQVal ? '0 0 10px rgba(0, 255, 102, 0.4)' : 'var(--crt-glow)') : 'none',
+                boxShadow: val ? (isHighlighted ? '0 0 10px rgba(0, 255, 102, 0.4)' : 'var(--crt-glow)') : 'none',
                 borderRadius: '4px',
                 display: 'flex',
                 alignItems: 'center',
@@ -72,7 +87,7 @@ export function KeepZone({ keptDice, hasOne, hasFour }: KeepZoneProps) {
                 fontSize: '1.8rem',
                 fontWeight: 'bold',
                 fontFamily: 'VT323, monospace',
-                color: isQVal ? '#00ff66' : 'var(--crt-text)',
+                color: isHighlighted ? '#00ff66' : 'var(--crt-text)',
                 transition: 'var(--transition-smooth)',
                 position: 'relative'
               }}
@@ -80,7 +95,7 @@ export function KeepZone({ keptDice, hasOne, hasFour }: KeepZoneProps) {
               {val || ''}
               
               {/* Subtle visual marker for Q-dice */}
-              {isQVal && (
+              {isHighlighted && (
                 <div style={{
                   position: 'absolute',
                   top: '2px',
