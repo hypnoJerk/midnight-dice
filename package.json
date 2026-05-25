@@ -1,0 +1,16 @@
+{
+  "name": "midnight-1-4-24-monorepo",
+  "private": true,
+  "version": "1.0.0",
+  "workspaces": [
+    "shared",
+    "client",
+    "server"
+  ],
+  "scripts": {
+    "client:dev": "npm run dev -w client",
+    "server:dev": "npm run dev -w server",
+    "test": "npm run test -w server",
+    "build": "npm run build --workspaces"
+  }
+}

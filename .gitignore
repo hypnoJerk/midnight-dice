@@ -1,0 +1,64 @@
+# ========================================================
+# Midnight 1-4-24 Monorepo — .gitignore
+# ========================================================
+
+# ---- Node / npm ----
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+package-lock.json.backup
+
+# ---- TypeScript build outputs ----
+dist/
+build/
+*.tsbuildinfo
+*.js.map
+
+# ---- Vite / PWA ----
+client/dist/
+client/.vite/
+
+# ---- Drizzle migrations (auto-generated, keep the schema source) ----
+# Uncomment if you want to exclude generated SQL:
+# server/drizzle/
+
+# ---- Environment & secrets ----
+.env
+.env.local
+.env.*.local
+.env.production
+*.pem
+*.key
+
+# ---- Docker ----
+# (docker-compose.yml itself is kept)
+.docker/
+
+# ---- OS artifacts ----
+.DS_Store
+.DS_Store?
+._*
+Thumbs.db
+desktop.ini
+
+# ---- Editor / IDE ----
+.vscode/settings.json
+.idea/
+*.swp
+*.swo
+*~
+
+# ---- Testing ----
+coverage/
+.vitest-cache/
+
+# ---- Logs ----
+logs/
+*.log
+
+# ---- Misc ----
+.cache/
+.tmp/
+*.bak

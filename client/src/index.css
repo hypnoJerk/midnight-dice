@@ -1,0 +1,252 @@
+@import url('https://fonts.googleapis.com/css2?family=VT323&family=Press+Start+2P&family=Inter:wght@400;500;600&family=Outfit:wght@700;800&display=swap');
+
+/* ========================================================
+   Decoupled Design Tokens (Centralized Theme Schema)
+   ======================================================== */
+:root {
+  /* Default: Retro CRT Green (Dark Mode) */
+  --font-pixel: 'VT323', monospace;
+  --font-heading: 'Outfit', sans-serif;
+  --font-sans: 'Inter', sans-serif;
+
+  --crt-bg: #050a06;
+  --crt-bg-panel: rgba(10, 24, 12, 0.8);
+  --crt-border: #00ff66;
+  --crt-border-muted: rgba(0, 255, 102, 0.2);
+  --crt-text: #00ff66;
+  --crt-text-secondary: #00b347;
+  --crt-text-muted: #006629;
+  
+  --crt-glow: 0 0 8px rgba(0, 255, 102, 0.5);
+  --crt-glow-strong: 0 0 20px rgba(0, 255, 102, 0.8);
+  --crt-glow-text: 0 0 6px rgba(0, 255, 102, 0.6);
+
+  --color-danger: #ff3333;
+  --color-danger-glow: 0 0 12px rgba(255, 51, 51, 0.7);
+
+  --scanline-opacity: 0.08;
+  --flicker-opacity: 0.15;
+  --transition-smooth: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Light Mode: Paper Terminal Green */
+[data-theme='light'] {
+  --crt-bg: #f0fdf4;
+  --crt-bg-panel: rgba(220, 252, 231, 0.85);
+  --crt-border: #166534;
+  --crt-border-muted: rgba(22, 101, 52, 0.25);
+  --crt-text: #166534;
+  --crt-text-secondary: #15803d;
+  --crt-text-muted: #22c55e;
+  
+  --crt-glow: 0 0 4px rgba(22, 101, 52, 0.25);
+  --crt-glow-strong: 0 0 10px rgba(22, 101, 52, 0.4);
+  --crt-glow-text: none;
+
+  --color-danger: #dc2626;
+  --color-danger-glow: none;
+  --scanline-opacity: 0.04;
+}
+
+/* Alternate Theme: Amber Terminal (Dark) */
+[data-preset='amber'] {
+  --crt-bg: #0d0600;
+  --crt-bg-panel: rgba(31, 14, 0, 0.8);
+  --crt-border: #ffb000;
+  --crt-border-muted: rgba(255, 176, 0, 0.2);
+  --crt-text: #ffb000;
+  --crt-text-secondary: #d69300;
+  --crt-text-muted: #8a5f00;
+
+  --crt-glow: 0 0 8px rgba(255, 176, 0, 0.5);
+  --crt-glow-strong: 0 0 20px rgba(255, 176, 0, 0.8);
+  --crt-glow-text: 0 0 6px rgba(255, 176, 0, 0.6);
+  --scanline-opacity: 0.08;
+}
+
+/* ========================================================
+   Global Reset & Base Layouts
+   ======================================================== */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background-color: var(--crt-bg);
+  color: var(--crt-text);
+  font-family: var(--font-pixel);
+  font-size: 21px;
+  letter-spacing: 0.05em;
+  min-height: 100vh;
+  overflow-x: hidden;
+  display: flex;
+  flex-direction: column;
+  text-shadow: var(--crt-glow-text);
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Hide standard HTML elements styled retro */
+input, button, select {
+  font-family: var(--font-pixel);
+  font-size: 1.1rem;
+  letter-spacing: 0.05em;
+  outline: none;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-pixel);
+  text-shadow: var(--crt-glow-text);
+  text-transform: uppercase;
+}
+
+/* Retro CRT Panel Borders */
+.terminal-panel {
+  background: var(--crt-bg-panel);
+  border: 2px solid var(--crt-border);
+  border-radius: 4px;
+  box-shadow: inset 0 0 15px rgba(0, 0, 0, 0.8), var(--crt-glow);
+  padding: 24px;
+  position: relative;
+  overflow: hidden;
+}
+
+.terminal-panel::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 4px;
+  background: var(--crt-border);
+  opacity: 0.15;
+}
+
+/* Interactive Phosphor Buttons */
+.btn-retro {
+  background: transparent;
+  color: var(--crt-text);
+  border: 2px solid var(--crt-border);
+  border-radius: 4px;
+  padding: 10px 20px;
+  cursor: pointer;
+  font-weight: bold;
+  text-transform: uppercase;
+  box-shadow: var(--crt-glow);
+  transition: var(--transition-smooth);
+  position: relative;
+}
+
+.btn-retro:hover {
+  background: var(--crt-border);
+  color: var(--crt-bg) !important;
+  box-shadow: var(--crt-glow-strong);
+  text-shadow: none;
+}
+
+.btn-retro:active {
+  transform: scale(0.98);
+}
+
+.btn-retro:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+/* CRT Scanlines Overlay */
+.crt-scanlines {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    rgba(18, 16, 16, 0) 50%, 
+    rgba(0, 0, 0, 0.25) 50%
+  ), linear-gradient(
+    90deg, 
+    rgba(255, 0, 0, 0.06), 
+    rgba(0, 255, 0, 0.02), 
+    rgba(0, 0, 255, 0.06)
+  );
+  background-size: 100% 4px, 6px 100%;
+  z-index: 9999;
+  pointer-events: none;
+  opacity: var(--scanline-opacity);
+}
+
+/* Screen Flicker Animation */
+@keyframes crt-flicker {
+  0% { opacity: 0.985; }
+  50% { opacity: 0.995; }
+  100% { opacity: 0.985; }
+}
+
+.crt-flicker-layer {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: transparent;
+  box-shadow: inset 0 0 100px rgba(0,0,0,0.4);
+  z-index: 9998;
+  pointer-events: none;
+  animation: crt-flicker 0.15s infinite;
+  opacity: var(--flicker-opacity);
+}
+
+/* Scanline scrolling beam */
+@keyframes scroll-beam {
+  0% { transform: translateY(-100%); }
+  100% { transform: translateY(100%); }
+}
+.crt-beam {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 20%;
+  background: linear-gradient(to bottom, rgba(0, 255, 102, 0), rgba(0, 255, 102, 0.05) 50%, rgba(0, 255, 102, 0));
+  z-index: 9997;
+  pointer-events: none;
+  animation: scroll-beam 12s linear infinite;
+}
+
+[data-preset='amber'] .crt-beam {
+  background: linear-gradient(to bottom, rgba(255, 176, 0, 0), rgba(255, 176, 0, 0.05) 50%, rgba(255, 176, 0, 0));
+}
+
+/* DQ Violent shake and red phosphor flash */
+@keyframes dq-shake {
+  0% { transform: translate(2px, 1px) rotate(0deg); }
+  10% { transform: translate(-1px, -2px) rotate(-1deg); }
+  20% { transform: translate(-3px, 0px) rotate(1deg); }
+  30% { transform: translate(0px, 2px) rotate(0deg); }
+  40% { transform: translate(1px, -1px) rotate(1deg); }
+  50% { transform: translate(-1px, 2px) rotate(-1deg); }
+  60% { transform: translate(-3px, 1px) rotate(0deg); }
+  70% { transform: translate(2px, 1px) rotate(-1deg); }
+  80% { transform: translate(-1px, -1px) rotate(1deg); }
+  90% { transform: translate(2px, 2px) rotate(0deg); }
+  100% { transform: translate(1px, -2px) rotate(-1deg); }
+}
+
+.dq-shake-active {
+  animation: dq-shake 0.4s ease-in-out infinite;
+  border-color: var(--color-danger) !important;
+  box-shadow: var(--color-danger-glow) !important;
+}
+
+/* Retro scanning marquee */
+.marquee-text {
+  display: inline-block;
+  white-space: nowrap;
+  animation: marquee 15s linear infinite;
+}
+@keyframes marquee {
+  0% { transform: translate3d(100%, 0, 0); }
+  100% { transform: translate3d(-100%, 0, 0); }
+}
