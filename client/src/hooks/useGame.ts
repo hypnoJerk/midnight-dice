@@ -8,6 +8,7 @@ export function useGame() {
   const [userId, setUserId] = useState<string>('');
   const [error, setError] = useState<string | null>(null);
   const [activeRoll, setActiveRoll] = useState<number[] | null>(null);
+  const [diceToRoll, setDiceToRoll] = useState<number | null>(null);
   const [isConnected, setIsConnected] = useState(false);
 
   // Persistent User Identity Setup
@@ -56,8 +57,14 @@ export function useGame() {
       localStorage.setItem('midnight_last_room_code', payload.roomCode);
     });
 
+    newSocket.on('roll:start', (payload: { diceCount: number }) => {
+      setDiceToRoll(payload.diceCount);
+      setActiveRoll(null);
+    });
+
     newSocket.on('roll:result', (payload: { dice: number[] }) => {
       setActiveRoll(payload.dice);
+      setDiceToRoll(null);
     });
 
     newSocket.on('error', (errMsg: string) => {
@@ -93,7 +100,14 @@ export function useGame() {
     if (!socket || !room || !userId) return;
     setError(null);
     setActiveRoll(null);
+    setDiceToRoll(null); // Clear previous physical roll count
     socket.emit('turn:roll', { roomCode: room.code, userId });
+  }, [socket, room, userId]);
+
+  const submitRollResults = useCallback((dice: number[]) => {
+    if (!socket || !room || !userId) return;
+    setError(null);
+    socket.emit('turn:roll:settled', { roomCode: room.code, userId, dice });
   }, [socket, room, userId]);
 
   const keepDice = useCallback((diceIndexes: number[]) => {
@@ -107,6 +121,7 @@ export function useGame() {
     setError(null);
     socket.emit('room:leave', { roomCode: room.code, userId });
     setRoom(null);
+    setDiceToRoll(null);
     localStorage.removeItem('midnight_last_room_code');
   }, [socket, room, userId]);
 
@@ -115,11 +130,14 @@ export function useGame() {
     userId,
     error,
     activeRoll,
+    diceToRoll,
     clearActiveRoll: () => setActiveRoll(null),
+    clearDiceToRoll: () => setDiceToRoll(null),
     createRoom,
     joinRoom,
     startGame,
     rollDice,
+    submitRollResults,
     keepDice,
     leaveRoom,
     isConnected

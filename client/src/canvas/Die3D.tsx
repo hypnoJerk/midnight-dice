@@ -6,8 +6,9 @@ import { useTheme } from '../context/ThemeContext.js';
 
 interface Die3DProps {
   index: number;
-  value: number;
+  value?: number; // Optional target value (used to steer the die physically in Sandbox FORCE_ROLL mode)
   onTap: (index: number) => void;
+  onSettle?: (index: number, value: number) => void;
   preset: 'green' | 'amber';
   diceScale?: number;
 }
@@ -22,9 +23,10 @@ const FACE_NORMALS: Record<number, THREE.Vector3> = {
   3: new THREE.Vector3(1, 0, 0)    // Face 3 is on right (+X)
 };
 
-export function Die3D({ index, value, onTap, preset, diceScale }: Die3DProps) {
+export function Die3D({ index, value, onTap, onSettle, preset, diceScale }: Die3DProps) {
   const { theme } = useTheme();
   const [hasSettled, setHasSettled] = useState(false);
+  const [detectedValue, setDetectedValue] = useState<number | null>(null);
   const [hovered, setHovered] = useState(false);
 
   // Accents: high-contrast dark forest green/amber for light mode, bright neon for dark mode
@@ -101,11 +103,48 @@ export function Die3D({ index, value, onTap, preset, diceScale }: Die3DProps) {
       velocity.current[2] ** 2
     );
 
+    // Dynamic magnetic torque guiding (only used in Sandbox FORCE_ROLL mode when a value target is passed)
+    if (value !== undefined && speed < 2.0 && speed >= 0.05 && ref.current) {
+      const faceNormal = FACE_NORMALS[value];
+      if (faceNormal) {
+        const qOuter = ref.current.quaternion.clone();
+        const vWorld = faceNormal.clone().applyQuaternion(qOuter).normalize();
+        const worldUp = new THREE.Vector3(0, 1, 0);
+        
+        // Find shortest rotation axis to pull the target face up
+        const torqueAxis = new THREE.Vector3().crossVectors(vWorld, worldUp);
+        
+        // Apply continuous physical torque. Gain K = 25.0 matches 1.5 mass nicely.
+        const K = 25.0;
+        api.applyTorque([torqueAxis.x * K, torqueAxis.y * K, torqueAxis.z * K]);
+      }
+    }
+
     if (speed < 0.05 && ref.current) {
+      // 1. Math-based face-up value detection
+      let maxUp = -Infinity;
+      let bestFace = 1;
+      const qOuter = ref.current.quaternion.clone();
+
+      for (const [faceStr, localNormal] of Object.entries(FACE_NORMALS)) {
+        const face = parseInt(faceStr);
+        const worldNormal = localNormal.clone().applyQuaternion(qOuter);
+        if (worldNormal.y > maxUp) {
+          maxUp = worldNormal.y;
+          bestFace = face;
+        }
+      }
+
+      setDetectedValue(bestFace);
       setHasSettled(true);
       api.mass.set(0);
       api.velocity.set(0, 0, 0);
       api.angularVelocity.set(0, 0, 0);
+
+      // 2. Invoke settle callback to report results
+      if (onSettle) {
+        onSettle(index, bestFace);
+      }
     }
   });
 
@@ -113,26 +152,30 @@ export function Die3D({ index, value, onTap, preset, diceScale }: Die3DProps) {
   // preserving the die's natural landing yaw (no Y-axis spin)
   useFrame(() => {
     if (hasSettled && ref.current && innerRef.current) {
-      const faceNormal = FACE_NORMALS[value];
-      if (faceNormal) {
-        const qOuter = ref.current.quaternion.clone();
+      // Use override value if forced, otherwise naturally detected landing value
+      const targetFace = value !== undefined ? value : detectedValue;
+      if (targetFace !== null && targetFace !== undefined) {
+        const faceNormal = FACE_NORMALS[targetFace];
+        if (faceNormal) {
+          const qOuter = ref.current.quaternion.clone();
 
-        // Transform the local face normal into world space
-        const vWorld = faceNormal.clone().applyQuaternion(qOuter);
+          // Transform the local face normal into world space
+          const vWorld = faceNormal.clone().applyQuaternion(qOuter);
 
-        // Find the shortest rotation from vWorld to world-up (0, 1, 0)
-        const worldUp = new THREE.Vector3(0, 1, 0);
-        const qCorrect = new THREE.Quaternion().setFromUnitVectors(vWorld.normalize(), worldUp);
+          // Find the shortest rotation from vWorld to world-up (0, 1, 0)
+          const worldUp = new THREE.Vector3(0, 1, 0);
+          const qCorrect = new THREE.Quaternion().setFromUnitVectors(vWorld.normalize(), worldUp);
 
-        // The final desired world orientation
-        const qFinal = qCorrect.multiply(qOuter);
+          // The final desired world orientation
+          const qFinal = qCorrect.multiply(qOuter);
 
-        // Compute local inner target: qInnerTarget = qOuter^-1 * qFinal
-        const qOuterInv = ref.current.quaternion.clone().invert();
-        const qInnerTarget = qOuterInv.multiply(qFinal);
+          // Compute local inner target: qInnerTarget = qOuter^-1 * qFinal
+          const qOuterInv = ref.current.quaternion.clone().invert();
+          const qInnerTarget = qOuterInv.multiply(qFinal);
 
-        // Smoothly slerp local quaternion
-        innerRef.current.quaternion.slerp(qInnerTarget, 0.1);
+          // Smoothly slerp local quaternion to keep visual faces perfectly level
+          innerRef.current.quaternion.slerp(qInnerTarget, 0.1);
+        }
       }
     }
   });

@@ -18,11 +18,13 @@ function GameAppInner() {
     userId,
     error,
     activeRoll,
+    diceToRoll,
     clearActiveRoll,
     createRoom,
     joinRoom,
     startGame,
     rollDice,
+    submitRollResults,
     keepDice,
     leaveRoom,
     isConnected
@@ -286,6 +288,8 @@ function GameAppInner() {
                 room={room} 
                 myUserId={userId} 
                 activeRoll={activeRoll}
+                diceToRoll={diceToRoll}
+                submitRollResults={submitRollResults}
                 clearActiveRoll={clearActiveRoll}
                 onRollDice={rollDice}
                 onKeepDice={keepDice}

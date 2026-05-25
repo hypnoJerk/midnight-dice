@@ -208,9 +208,10 @@ export class RoomManager {
   }
 
   /**
-   * Handles authoritative dice rolling for the active player.
+   * Handles starting a dice roll for the active player.
+   * Returns the count of dice they are authorized to roll.
    */
-  public rollActivePlayer(roomCode: string, userId: string): number[] {
+  public rollActivePlayer(roomCode: string, userId: string): number {
     const room = this.rooms.get(roomCode.toUpperCase());
     if (!room) throw new Error('Room not found');
 
@@ -230,26 +231,56 @@ export class RoomManager {
         throw new Error('No dice remaining to roll this turn');
       }
 
-      const rolled = rollDice(remainingDice);
-      activePlayer.diceActive = rolled;
+      activePlayer.diceActive = [];
       activePlayer.rollsCount += 1;
 
-      return rolled;
+      return remainingDice;
     } else if (room.gameState === 'SHOOTOUT') {
       // Shootout roll rules
       if (activePlayer.shootoutScore !== undefined) {
         throw new Error('You have already rolled in this shootout round');
       }
 
-      const rolled = rollDice(6);
-      activePlayer.shootoutScore = calculateShootoutScore(rolled);
       activePlayer.rollsCount += 1;
+
+      return 6;
+    } else {
+      throw new Error('Game is not in a rolling state');
+    }
+  }
+
+  /**
+   * Handles submitting the physical dice values rolled by the client.
+   */
+  public submitRollActivePlayer(roomCode: string, userId: string, diceValues: number[]): Room {
+    const room = this.rooms.get(roomCode.toUpperCase());
+    if (!room) throw new Error('Room not found');
+
+    const activePlayer = room.players[room.activePlayerIndex];
+    if (!activePlayer || activePlayer.id !== userId) {
+      throw new Error('It is not your turn');
+    }
+
+    if (room.gameState === 'PLAYING') {
+      const expectedCount = 6 - activePlayer.diceKept.length;
+      if (diceValues.length !== expectedCount) {
+        throw new Error(`Invalid dice count submitted. Expected ${expectedCount}, got ${diceValues.length}`);
+      }
+
+      activePlayer.diceActive = diceValues;
+      return room;
+    } else if (room.gameState === 'SHOOTOUT') {
+      if (diceValues.length !== 6) {
+        throw new Error(`Invalid dice count submitted. Expected 6, got ${diceValues.length}`);
+      }
+
+      activePlayer.shootoutScore = calculateShootoutScore(diceValues);
 
       // In a shootout, a player rolls all 6 dice exactly once, 
       // which immediately concludes their shootout turn.
       this.advanceShootoutTurn(room);
 
-      return rolled;
+      return room;
     } else {
       throw new Error('Game is not in a rolling state');
     }

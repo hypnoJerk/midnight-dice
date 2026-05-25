@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { Physics } from '@react-three/cannon';
 import Tray3D from './Tray3D.js';
@@ -22,8 +22,11 @@ interface DebugConfig {
 }
 
 interface DiceSceneProps {
-  diceValues: number[];
+  diceCount: number;
+  targetValues?: number[]; // Optional target values (for Sandbox FORCE_ROLL override steering)
   onTapDie: (index: number) => void;
+  onRollComplete?: (values: number[]) => void;
+  rollId: number;
   preset: 'green' | 'amber';
   debugConfig?: DebugConfig;
 }
@@ -54,8 +57,32 @@ function CameraController({
   return null;
 }
 
-export function DiceScene({ diceValues, onTapDie, preset, debugConfig }: DiceSceneProps) {
+export function DiceScene({ diceCount, targetValues, onTapDie, onRollComplete, rollId, preset, debugConfig }: DiceSceneProps) {
   const { theme } = useTheme();
+
+  // Tracks the face-up values of settled dice
+  const settledValuesRef = useRef<Record<number, number>>({});
+  const hasTriggeredCompleteRef = useRef(false);
+
+  // Reset tracking state on every new roll trigger
+  useEffect(() => {
+    settledValuesRef.current = {};
+    hasTriggeredCompleteRef.current = false;
+  }, [rollId]);
+
+  const handleDieSettle = (idx: number, val: number) => {
+    // Record the settled value for this die index
+    settledValuesRef.current[idx] = val;
+
+    // Check if all active dice have finished settling
+    if (Object.keys(settledValuesRef.current).length === diceCount && !hasTriggeredCompleteRef.current) {
+      hasTriggeredCompleteRef.current = true;
+      const finalValues = Array.from({ length: diceCount }).map((_, i) => settledValuesRef.current[i]);
+      if (onRollComplete) {
+        onRollComplete(finalValues);
+      }
+    }
+  };
 
   // Calibrated default values for angled 3D terminal look
   const gravityValue = debugConfig ? debugConfig.gravity : 9.8;
@@ -121,12 +148,13 @@ export function DiceScene({ diceValues, onTapDie, preset, debugConfig }: DiceSce
           defaultContactMaterial={{ friction: 0.12, restitution: restitutionValue }}
         >
           <Tray3D />
-          {diceValues.map((value, idx) => (
+          {Array.from({ length: diceCount }).map((_, idx) => (
             <Die3D 
-              key={`${idx}-${value}`} 
+              key={`${rollId}-${idx}`} 
               index={idx} 
-              value={value} 
+              value={targetValues?.[idx]} 
               onTap={onTapDie}
+              onSettle={handleDieSettle}
               preset={preset}
               diceScale={diceScale}
             />
@@ -149,7 +177,7 @@ export function DiceScene({ diceValues, onTapDie, preset, debugConfig }: DiceSce
       }} />
 
       {/* Blinking Prompt overlay if tray is empty */}
-      {diceValues.length === 0 && (
+      {diceCount === 0 && (
         <div style={{
           position: 'absolute',
           top: '50%',

@@ -9,6 +9,8 @@ interface GamePlayViewProps {
   room: Room;
   myUserId: string;
   activeRoll: number[] | null;
+  diceToRoll: number | null;
+  submitRollResults: (dice: number[]) => void;
   clearActiveRoll: () => void;
   onRollDice: () => void;
   onKeepDice: (diceIndexes: number[]) => void;
@@ -20,6 +22,8 @@ export function GamePlayView({
   room,
   myUserId,
   activeRoll,
+  diceToRoll,
+  submitRollResults,
   clearActiveRoll,
   onRollDice,
   onKeepDice,
@@ -34,6 +38,9 @@ export function GamePlayView({
   const activePlayer = room.players[room.activePlayerIndex];
   const isActive = activePlayer?.id === myUserId;
   const isSpectator = !isActive;
+
+  const isPhysicsRolling = diceToRoll !== null;
+  const diceCount = isPhysicsRolling ? diceToRoll : (activeRoll ? activeRoll.length : 0);
 
   // Clear selections when active roll changes
   useEffect(() => {
@@ -51,7 +58,7 @@ export function GamePlayView({
       const timer = setTimeout(() => {
         setShowDqModal(true);
       }, 1000);
-
+ 
       return () => clearTimeout(timer);
     } else if (room.gameState === 'PLAYING' && !mePlayer?.isDQ) {
       setIsDqBust(false);
@@ -123,8 +130,14 @@ export function GamePlayView({
               </div>
               
               <DiceScene 
-                diceValues={activeRoll || []} 
+                diceCount={diceCount}
+                rollId={activePlayer?.rollsCount || 0}
                 onTapDie={handleTapDie}
+                onRollComplete={(values) => {
+                  if (isPhysicsRolling) {
+                    submitRollResults(values);
+                  }
+                }}
                 preset={preset}
               />
 
@@ -132,7 +145,7 @@ export function GamePlayView({
               <div style={{ display: 'flex', gap: '12px', width: '100%' }}>
                 <button 
                   onClick={handleRoll} 
-                  disabled={!!activeRoll && activeRoll.length > 0}
+                  disabled={isPhysicsRolling || (activeRoll !== null && activeRoll.length > 0)}
                   className="btn-retro"
                   style={{ flex: 1 }}
                 >
@@ -140,12 +153,12 @@ export function GamePlayView({
                 </button>
                 <button 
                   onClick={handleKeep} 
-                  disabled={selectedIndexes.length === 0}
+                  disabled={isPhysicsRolling || selectedIndexes.length === 0}
                   className="btn-retro"
                   style={{ 
                     flex: 1, 
-                    borderColor: selectedIndexes.length > 0 ? '#00ff66' : 'var(--crt-border-muted)',
-                    color: selectedIndexes.length > 0 ? '#00ff66' : 'var(--crt-text-muted)'
+                    borderColor: (!isPhysicsRolling && selectedIndexes.length > 0) ? '#00ff66' : 'var(--crt-border-muted)',
+                    color: (!isPhysicsRolling && selectedIndexes.length > 0) ? '#00ff66' : 'var(--crt-text-muted)'
                   }}
                 >
                   LOCK SELECTION ({selectedIndexes.length})
@@ -209,11 +222,17 @@ export function GamePlayView({
           {isActive ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
               <DiceScene 
-                diceValues={activeRoll || []} 
+                diceCount={diceCount}
+                rollId={activePlayer?.rollsCount || 0}
                 onTapDie={() => {}} // No tapping in shootout
+                onRollComplete={(values) => {
+                  if (isPhysicsRolling) {
+                    submitRollResults(values);
+                  }
+                }}
                 preset={preset}
               />
-              <button onClick={handleRoll} disabled={!!activeRoll} className="btn-retro">
+              <button onClick={handleRoll} disabled={isPhysicsRolling || !!activeRoll} className="btn-retro">
                 ROLL ALL SIX DICE
               </button>
             </div>

@@ -49,6 +49,11 @@ export function SandboxDebugView({ preset, onBack }: { preset: 'green' | 'amber'
   const [activeRoll, setActiveRoll] = useState<number[]>([]);
   const [selectedIndexes, setSelectedIndexes] = useState<number[]>([]);
 
+  // 4. Local Physics Rolling States
+  const [sandboxRollId, setSandboxRollId] = useState(0);
+  const [isPhysicsRolling, setIsPhysicsRolling] = useState(false);
+  const [diceToRollCount, setDiceToRollCount] = useState(0);
+
   const scoring = calculateScore(keptDice);
   const hasOne = scoring.hasOne;
   const hasFour = scoring.hasFour;
@@ -71,19 +76,19 @@ export function SandboxDebugView({ preset, onBack }: { preset: 'green' | 'amber'
   const handleRoll = () => {
     playRoll();
     setSelectedIndexes([]);
-    setActiveRoll([]); // Clear first to force unmount
+    setActiveRoll([]); // Clear first
+    
+    const count = 6 - keptDice.length;
+    if (count <= 0) return;
 
-    setTimeout(() => {
-      const diceCount = 6 - keptDice.length;
-      if (diceCount <= 0) return;
+    setDiceToRollCount(count);
+    setIsPhysicsRolling(true);
+    setSandboxRollId(prev => prev + 1);
+  };
 
-      if (forceDice) {
-        const overrideSlice = overrideValues.slice(keptDice.length, 6);
-        setActiveRoll(overrideSlice);
-      } else {
-        setActiveRoll(rollDice(diceCount));
-      }
-    }, 50);
+  const handleRollComplete = (values: number[]) => {
+    setActiveRoll(values);
+    setIsPhysicsRolling(false);
   };
 
   const handleKeep = () => {
@@ -110,6 +115,8 @@ export function SandboxDebugView({ preset, onBack }: { preset: 'green' | 'amber'
     setKeptDice([]);
     setActiveRoll([]);
     setSelectedIndexes([]);
+    setIsPhysicsRolling(false);
+    setDiceToRollCount(0);
   };
 
   const handleOverrideValueChange = (idx: number, val: number) => {
@@ -162,8 +169,11 @@ export function SandboxDebugView({ preset, onBack }: { preset: 'green' | 'amber'
         </div>
 
         <DiceScene 
-          diceValues={activeRoll} 
-          onTapDie={handleTapDie} 
+          diceCount={isPhysicsRolling ? diceToRollCount : (activeRoll.length)}
+          targetValues={forceDice ? overrideValues.slice(keptDice.length, 6) : undefined}
+          onTapDie={handleTapDie}
+          onRollComplete={handleRollComplete}
+          rollId={sandboxRollId}
           preset={preset}
           debugConfig={debugConfig}
         />
@@ -172,7 +182,7 @@ export function SandboxDebugView({ preset, onBack }: { preset: 'green' | 'amber'
         <div style={{ display: 'flex', gap: '12px' }}>
           <button 
             onClick={handleRoll} 
-            disabled={keptDice.length === 6 || activeRoll.length > 0} 
+            disabled={keptDice.length === 6 || activeRoll.length > 0 || isPhysicsRolling} 
             className="btn-retro" 
             style={{ flex: 1 }}
           >
@@ -180,17 +190,17 @@ export function SandboxDebugView({ preset, onBack }: { preset: 'green' | 'amber'
           </button>
           <button 
             onClick={handleKeep} 
-            disabled={selectedIndexes.length === 0} 
+            disabled={selectedIndexes.length === 0 || isPhysicsRolling} 
             className="btn-retro" 
             style={{ 
               flex: 1,
-              borderColor: selectedIndexes.length > 0 ? '#00ff66' : 'var(--crt-border-muted)',
-              color: selectedIndexes.length > 0 ? '#00ff66' : 'var(--crt-text-muted)'
+              borderColor: (!isPhysicsRolling && selectedIndexes.length > 0) ? '#00ff66' : 'var(--crt-border-muted)',
+              color: (!isPhysicsRolling && selectedIndexes.length > 0) ? '#00ff66' : 'var(--crt-text-muted)'
             }}
           >
             LOCK SELECTION ({selectedIndexes.length})
           </button>
-          <button onClick={handleReset} className="btn-retro" style={{ flex: 0.5 }}>
+          <button onClick={handleReset} disabled={isPhysicsRolling} className="btn-retro" style={{ flex: 0.5 }}>
             RESET
           </button>
         </div>

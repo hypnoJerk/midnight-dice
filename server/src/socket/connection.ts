@@ -118,20 +118,34 @@ export function initializeSockets(io: Server, roomManager: RoomManager) {
       }
     });
 
-    // 4. Turn Roll
+    // 4. Turn Roll (Starts the physical roll)
     socket.on('turn:roll', ({ roomCode, userId }: { roomCode: string; userId: string }) => {
       try {
-        const diceResults = roomManager.rollActivePlayer(roomCode, userId);
+        const diceCount = roomManager.rollActivePlayer(roomCode, userId);
         const room = roomManager.getRoom(roomCode);
         
         if (room) {
-          // Send rolled dice faces directly to active player
-          socket.emit('roll:result', { dice: diceResults });
-          // Broadcast updated room state (rolls count updated, active dice metadata) to all
+          // Tell the active player's client to start the physical roll of `diceCount` dice
+          socket.emit('roll:start', { diceCount });
+          // Broadcast updated room state (rolls count updated, active dice cleared) to all
           io.to(roomCode.toUpperCase()).emit('room:sync', buildSyncPayload(room));
         }
       } catch (err: any) {
         socket.emit('error', err.message || 'Failed to roll dice');
+      }
+    });
+
+    // 4b. Turn Roll Settled (Submits physical results after physics settles)
+    socket.on('turn:roll:settled', ({ roomCode, userId, dice }: { roomCode: string; userId: string; dice: number[] }) => {
+      try {
+        const room = roomManager.submitRollActivePlayer(roomCode, userId, dice);
+        
+        // Send confirmed rolled dice faces directly to active player
+        socket.emit('roll:result', { dice });
+        // Broadcast updated room state (with diceActive populated) to all
+        io.to(roomCode.toUpperCase()).emit('room:sync', buildSyncPayload(room));
+      } catch (err: any) {
+        socket.emit('error', err.message || 'Failed to submit roll results');
       }
     });
 
