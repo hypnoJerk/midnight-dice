@@ -15,25 +15,25 @@ export function Tray3D() {
   // 2. Bounding Walls (Elevated to y = 1.5 to map to our raised floor)
   const [wallNorth] = usePlane(() => ({
     rotation: [0, 0, 0],
-    position: [0, 1.5, -4.5],
+    position: [0, 1.5, -3.4],
     type: 'Static'
   }));
 
   const [wallSouth] = usePlane(() => ({
     rotation: [Math.PI, 0, 0],
-    position: [0, 1.5, 4.5],
+    position: [0, 1.5, 3.4],
     type: 'Static'
   }));
 
   const [wallWest] = usePlane(() => ({
     rotation: [0, Math.PI / 2, 0],
-    position: [-4.5, 1.5, 0],
+    position: [-3.8, 1.5, 0],
     type: 'Static'
   }));
 
   const [wallEast] = usePlane(() => ({
     rotation: [0, -Math.PI / 2, 0],
-    position: [4.5, 1.5, 0],
+    position: [3.8, 1.5, 0],
     type: 'Static'
   }));
 

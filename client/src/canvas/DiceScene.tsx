@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { Physics } from '@react-three/cannon';
+import * as THREE from 'three';
 import Tray3D from './Tray3D.js';
 import Die3D from './Die3D.js';
 import { useTheme } from '../context/ThemeContext.js';
@@ -33,26 +34,86 @@ interface DiceSceneProps {
 }
 
 /**
- * Advanced Camera Controller. Directly updates the active R3F perspective camera's
- * position, FOV, and target alignment programmatically on every state change.
+ * Advanced Dynamic Camera Controller. Tracks active rolling/settled dice,
+ * automatically centers them, and adjusts Y-height and Z-depth based on the
+ * maximum spatial spread of the dice. Interpolated smoothly using THREE lerping.
  */
 function CameraController({ 
-  x, y, z, fov, target 
+  x, y, z, fov, target, diceRefs 
 }: { 
-  x: number; y: number; z: number; fov: number; target: [number, number, number] 
+  x: number; y: number; z: number; fov: number; target: [number, number, number];
+  diceRefs: React.MutableRefObject<Record<number, React.RefObject<THREE.Group>>>;
 }) {
   const { camera } = useThree();
-  
+  const currentTarget = useRef(new THREE.Vector3(target[0], target[1], target[2]));
+  const currentPosition = useRef(new THREE.Vector3(x, y, z));
+
+  // Sync with base external configurations (e.g. from Sandbox calibration sliders)
   useEffect(() => {
-    camera.position.set(x, y, z);
+    currentPosition.current.set(x, y, z);
+    currentTarget.current.set(target[0], target[1], target[2]);
     if ((camera as any).isPerspectiveCamera) {
       (camera as any).fov = fov;
       (camera as any).updateProjectionMatrix();
     }
-  }, [camera, x, y, z, fov]);
+  }, [camera, x, y, z, fov, target[0], target[1], target[2]]);
 
   useFrame(() => {
-    camera.lookAt(target[0], target[1], target[2]);
+    const positions: THREE.Vector3[] = [];
+    Object.values(diceRefs.current).forEach(ref => {
+      if (ref?.current) {
+        const p = new THREE.Vector3();
+        ref.current.getWorldPosition(p);
+        positions.push(p);
+      }
+    });
+
+    let targetLookAt = new THREE.Vector3(target[0], target[1], target[2]);
+    let targetCamPos = new THREE.Vector3(x, y, z);
+
+    if (positions.length > 0) {
+      // 1. Compute Centroid (center of mass of all active dice)
+      const centroid = new THREE.Vector3();
+      positions.forEach(p => centroid.add(p));
+      centroid.divideScalar(positions.length);
+
+      // Target lookAt point focuses on the centroid
+      targetLookAt.set(centroid.x, 1.0, centroid.z);
+
+      // 2. Compute Spread (maximum bounding size)
+      let minX = Infinity, maxX = -Infinity;
+      let minZ = Infinity, maxZ = -Infinity;
+      positions.forEach(p => {
+        if (p.x < minX) minX = p.x;
+        if (p.x > maxX) maxX = p.x;
+        if (p.z < minZ) minZ = p.z;
+        if (p.z > maxZ) maxZ = p.z;
+      });
+
+      const dx = maxX - minX;
+      const dz = maxZ - minZ;
+      const spread = Math.max(dx, dz);
+
+      // 3. Dynamic heights and depths
+      // For clustered dice (spread < 2.0), use base height. For spread out dice, scale up.
+      const spreadOffset = Math.max(0, spread - 2.0);
+      const heightPadding = spreadOffset * 0.75;
+      
+      const dynamicY = y + heightPadding;
+      const dynamicZ = z + (heightPadding * 0.18); // keep high-angle tilt proportional
+      
+      // Keep camera centered horizontally on centroid with a damping coefficient
+      const dynamicX = centroid.x * 0.5;
+
+      targetCamPos.set(dynamicX, dynamicY, dynamicZ);
+    }
+
+    // Buttery smooth lerp tracking (0.04 factor creates premium cinematic panning)
+    currentPosition.current.lerp(targetCamPos, 0.04);
+    currentTarget.current.lerp(targetLookAt, 0.04);
+
+    camera.position.copy(currentPosition.current);
+    camera.lookAt(currentTarget.current);
   });
 
   return null;
@@ -74,11 +135,21 @@ export function DiceScene({
   const settledValuesRef = useRef<Record<number, number>>({});
   const hasTriggeredCompleteRef = useRef(false);
 
+  // Registry of references to the dice groups for camera centroid tracking
+  const diceRefs = useRef<Record<number, React.RefObject<THREE.Group>>>({});
+
   // Reset tracking state on every new roll trigger
   useEffect(() => {
     settledValuesRef.current = {};
     hasTriggeredCompleteRef.current = false;
+    diceRefs.current = {}; // Reset registered references on new throw
   }, [rollId]);
+
+  const registerDieRef = (idx: number, ref: React.RefObject<THREE.Group>) => {
+    if (ref) {
+      diceRefs.current[idx] = ref;
+    }
+  };
 
   const handleDieSettle = (idx: number, val: number) => {
     // Record the settled value for this die index
@@ -141,6 +212,7 @@ export function DiceScene({
           z={camZ} 
           fov={fov} 
           target={[targetX, targetY, targetZ]} 
+          diceRefs={diceRefs}
         />
 
         <ambientLight intensity={ambientIntensity} />
@@ -169,6 +241,7 @@ export function DiceScene({
               preset={preset}
               diceScale={diceScale}
               isSelected={selectedIndexes.includes(idx)}
+              registerDieRef={registerDieRef}
             />
           ))}
         </Physics>

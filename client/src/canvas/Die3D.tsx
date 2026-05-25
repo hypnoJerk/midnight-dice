@@ -12,6 +12,7 @@ interface Die3DProps {
   preset: 'green' | 'amber';
   diceScale?: number;
   isSelected?: boolean;
+  registerDieRef?: (index: number, ref: React.RefObject<THREE.Group>) => void;
 }
 
 // Local face normal vectors: which direction each face points in local die space
@@ -24,7 +25,7 @@ const FACE_NORMALS: Record<number, THREE.Vector3> = {
   3: new THREE.Vector3(1, 0, 0)    // Face 3 is on right (+X)
 };
 
-export function Die3D({ index, value, onTap, onSettle, preset, diceScale, isSelected }: Die3DProps) {
+export function Die3D({ index, value, onTap, onSettle, preset, diceScale, isSelected, registerDieRef }: Die3DProps) {
   const { theme } = useTheme();
   const [hasSettled, setHasSettled] = useState(false);
   const [detectedValue, setDetectedValue] = useState<number | null>(null);
@@ -94,6 +95,10 @@ export function Die3D({ index, value, onTap, onSettle, preset, diceScale, isSele
     // Reset force applied tracking on mount/remount
     forceAppliedRef.current = false;
 
+    if (registerDieRef && ref) {
+      registerDieRef(index, ref as React.RefObject<THREE.Group>);
+    }
+
     const unsubscribeV = api.velocity.subscribe(v => {
       velocity.current = v;
 
@@ -138,6 +143,23 @@ export function Die3D({ index, value, onTap, onSettle, preset, diceScale, isSele
     if (hasSettled) return;
 
     frameCount.current += 1;
+
+    // Out-of-bounds safety watchdog (failsafe in case of physics clipping)
+    if (ref.current && frameCount.current >= 30) {
+      const pos = ref.current.position;
+      if (pos.y < -2.0 || Math.abs(pos.x) > 6.0 || Math.abs(pos.z) > 6.0) {
+        api.velocity.set(0, -0.2, 0);
+        api.angularVelocity.set(0, 0, 0);
+        api.position.set(
+          -1.0 + (index * 0.4) + (Math.random() * 0.2), 
+          4.0 + (Math.random() * 1.0), 
+          -1.0 + (Math.random() * 1.5)
+        );
+        api.wakeUp();
+        return;
+      }
+    }
+
     if (frameCount.current < 60) return; // 60 frame (approx 1s) grace period for physical throw
 
     // Check if the die has practically stopped moving
