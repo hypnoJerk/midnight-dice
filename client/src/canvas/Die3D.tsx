@@ -58,6 +58,7 @@ export function Die3D({ index, value, onTap, onSettle, preset, diceScale }: Die3
   }));
 
   const velocity = useRef([0, 0, 0]);
+  const quaternion = useRef([0, 0, 0, 1]);
   const frameCount = useRef(0);
   const innerRef = useRef<THREE.Group>(null);
 
@@ -65,7 +66,13 @@ export function Die3D({ index, value, onTap, onSettle, preset, diceScale }: Die3
     const unsubscribeV = api.velocity.subscribe(v => {
       velocity.current = v;
     });
-    return unsubscribeV;
+    const unsubscribeQ = api.quaternion.subscribe(q => {
+      quaternion.current = q;
+    });
+    return () => {
+      unsubscribeV();
+      unsubscribeQ();
+    };
   }, [api]);
 
   useEffect(() => {
@@ -107,7 +114,12 @@ export function Die3D({ index, value, onTap, onSettle, preset, diceScale }: Die3
     if (value !== undefined && speed < 2.0 && speed >= 0.05 && ref.current) {
       const faceNormal = FACE_NORMALS[value];
       if (faceNormal) {
-        const qOuter = ref.current.quaternion.clone();
+        const qOuter = new THREE.Quaternion(
+          quaternion.current[0],
+          quaternion.current[1],
+          quaternion.current[2],
+          quaternion.current[3]
+        );
         const vWorld = faceNormal.clone().applyQuaternion(qOuter).normalize();
         const worldUp = new THREE.Vector3(0, 1, 0);
         
@@ -121,10 +133,15 @@ export function Die3D({ index, value, onTap, onSettle, preset, diceScale }: Die3
     }
 
     if (speed < 0.05 && ref.current) {
-      // 1. Math-based face-up value detection
+      // 1. Math-based face-up value detection using authoritative physics quaternion
       let maxUp = -Infinity;
       let bestFace = 1;
-      const qOuter = ref.current.quaternion.clone();
+      const qOuter = new THREE.Quaternion(
+        quaternion.current[0],
+        quaternion.current[1],
+        quaternion.current[2],
+        quaternion.current[3]
+      );
 
       for (const [faceStr, localNormal] of Object.entries(FACE_NORMALS)) {
         const face = parseInt(faceStr);
@@ -157,7 +174,12 @@ export function Die3D({ index, value, onTap, onSettle, preset, diceScale }: Die3
       if (targetFace !== null && targetFace !== undefined) {
         const faceNormal = FACE_NORMALS[targetFace];
         if (faceNormal) {
-          const qOuter = ref.current.quaternion.clone();
+          const qOuter = new THREE.Quaternion(
+            quaternion.current[0],
+            quaternion.current[1],
+            quaternion.current[2],
+            quaternion.current[3]
+          );
 
           // Transform the local face normal into world space
           const vWorld = faceNormal.clone().applyQuaternion(qOuter);
@@ -170,7 +192,7 @@ export function Die3D({ index, value, onTap, onSettle, preset, diceScale }: Die3
           const qFinal = qCorrect.multiply(qOuter);
 
           // Compute local inner target: qInnerTarget = qOuter^-1 * qFinal
-          const qOuterInv = ref.current.quaternion.clone().invert();
+          const qOuterInv = qOuter.clone().invert();
           const qInnerTarget = qOuterInv.multiply(qFinal);
 
           // Smoothly slerp local quaternion to keep visual faces perfectly level
