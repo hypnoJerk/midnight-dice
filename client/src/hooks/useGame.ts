@@ -10,6 +10,7 @@ export function useGame() {
   const [activeRoll, setActiveRoll] = useState<number[] | null>(null);
   const [diceToRoll, setDiceToRoll] = useState<number | null>(null);
   const [isConnected, setIsConnected] = useState(false);
+  const [rollId, setRollId] = useState(0);
 
   // Persistent User Identity Setup
   useEffect(() => {
@@ -53,6 +54,17 @@ export function useGame() {
         activePlayerIndex: payload.players.findIndex(p => p.id === payload.activePlayerId),
         winners: payload.winners
       });
+
+      // Synchronize activeRoll local state with the server's authoritative state
+      if (payload.activePlayerId === uId) {
+        if (activePlayer && activePlayer.diceActive && activePlayer.diceActive.length > 0) {
+          setActiveRoll(activePlayer.diceActive);
+        } else {
+          setActiveRoll(null);
+        }
+      } else {
+        setActiveRoll(null);
+      }
       
       localStorage.setItem('midnight_last_room_code', payload.roomCode);
     });
@@ -60,6 +72,7 @@ export function useGame() {
     newSocket.on('roll:start', (payload: { diceCount: number }) => {
       setDiceToRoll(payload.diceCount);
       setActiveRoll(null);
+      setRollId(prev => prev + 1);
     });
 
     newSocket.on('roll:result', (payload: { dice: number[] }) => {
@@ -131,6 +144,7 @@ export function useGame() {
     error,
     activeRoll,
     diceToRoll,
+    rollId,
     clearActiveRoll: () => setActiveRoll(null),
     clearDiceToRoll: () => setDiceToRoll(null),
     createRoom,

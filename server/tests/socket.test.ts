@@ -91,14 +91,19 @@ describe('Socket Coordinator Integration & Authoritative Move Validation', () =>
     roomManager.startGame(room.code, 'user-A');
 
     const rollCallback = registeredEvents.get('turn:roll');
+    const settledCallback = registeredEvents.get('turn:roll:settled');
     const keepCallback = registeredEvents.get('turn:keep');
 
-    // Alice rolls dice
+    // Alice rolls dice (starts physical roll)
     rollCallback!({ roomCode: room.code, userId: 'user-A' });
 
     const player = room.players[0];
-    expect(player.diceActive.length).toBe(6);
+    expect(player.diceActive.length).toBe(0); // active dice cleared when starting a roll
     expect(player.rollsCount).toBe(1);
+
+    // Simulate dice settling from client physical throw
+    settledCallback!({ roomCode: room.code, userId: 'user-A', dice: [1, 2, 3, 4, 5, 6] });
+    expect(player.diceActive.length).toBe(6);
 
     // Alice keeps dice indices [0, 1] (e.g. keeping 2 dice)
     keepCallback!({ roomCode: room.code, userId: 'user-A', diceIndexes: [0, 1] });
@@ -106,9 +111,13 @@ describe('Socket Coordinator Integration & Authoritative Move Validation', () =>
     expect(player.diceActive.length).toBe(0);
     expect(player.diceKept.length).toBe(2);
 
-    // Alice rolls remaining 4 dice
+    // Alice rolls remaining 4 dice (starts physical roll)
     rollCallback!({ roomCode: room.code, userId: 'user-A' });
-    expect(player.diceActive.length).toBe(4);
+    expect(player.diceActive.length).toBe(0); // active dice cleared when starting a roll
     expect(player.rollsCount).toBe(2);
+
+    // Simulate dice settling for the remaining 4 dice
+    settledCallback!({ roomCode: room.code, userId: 'user-A', dice: [2, 3, 4, 5] });
+    expect(player.diceActive.length).toBe(4);
   });
 });

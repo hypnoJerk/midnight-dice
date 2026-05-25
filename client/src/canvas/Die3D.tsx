@@ -11,6 +11,7 @@ interface Die3DProps {
   onSettle?: (index: number, value: number) => void;
   preset: 'green' | 'amber';
   diceScale?: number;
+  isSelected?: boolean;
 }
 
 // Local face normal vectors: which direction each face points in local die space
@@ -23,7 +24,7 @@ const FACE_NORMALS: Record<number, THREE.Vector3> = {
   3: new THREE.Vector3(1, 0, 0)    // Face 3 is on right (+X)
 };
 
-export function Die3D({ index, value, onTap, onSettle, preset, diceScale }: Die3DProps) {
+export function Die3D({ index, value, onTap, onSettle, preset, diceScale, isSelected }: Die3DProps) {
   const { theme } = useTheme();
   const [hasSettled, setHasSettled] = useState(false);
   const [detectedValue, setDetectedValue] = useState<number | null>(null);
@@ -34,8 +35,28 @@ export function Die3D({ index, value, onTap, onSettle, preset, diceScale }: Die3
     ? (preset === 'green' ? '#166534' : '#b45309')
     : (preset === 'green' ? '#00ff66' : '#ffb000');
 
+  // Selection high-contrast colors
+  const selectionColor = theme === 'light'
+    ? (preset === 'green' ? '#15803d' : '#ea580c')
+    : (preset === 'green' ? '#39ff14' : '#ffea00');
+
   const dieColor = theme === 'light' ? '#f8fafc' : '#0f172a';
   const dieOpacity = theme === 'light' ? 0.75 : 0.8;
+
+  // Selected glass body tint & emissive glow configuration
+  const selectedDieColor = theme === 'light'
+    ? (preset === 'green' ? '#dcfce7' : '#fef3c7')
+    : (preset === 'green' ? '#042f1a' : '#2e1300');
+
+  const selectedEmissive = isSelected
+    ? (preset === 'green'
+        ? (theme === 'light' ? '#166534' : '#00ff66')
+        : (theme === 'light' ? '#b45309' : '#ffb000'))
+    : '#000000';
+
+  const selectedEmissiveIntensity = isSelected
+    ? (theme === 'light' ? 0.15 : 0.28)
+    : 0.0;
   
   // Set size scale (default 1.2, user calibrated 0.8)
   const scale = diceScale || 1.2;
@@ -51,6 +72,12 @@ export function Die3D({ index, value, onTap, onSettle, preset, diceScale }: Die3
   const [ref, api] = useBox(() => ({
     mass: 1.5,
     position: [startX, startY, startZ],
+    velocity: [0, -0.2, 0],
+    angularVelocity: [
+      (Math.random() - 0.5) * 2,
+      (Math.random() - 0.5) * 2,
+      (Math.random() - 0.5) * 2
+    ],
     args: [scale, scale, scale],
     allowSleep: true,
     sleepSpeedLimit: 0.1,
@@ -61,32 +88,42 @@ export function Die3D({ index, value, onTap, onSettle, preset, diceScale }: Die3
   const quaternion = useRef([0, 0, 0, 1]);
   const frameCount = useRef(0);
   const innerRef = useRef<THREE.Group>(null);
+  const forceAppliedRef = useRef(false);
 
   useEffect(() => {
+    // Reset force applied tracking on mount/remount
+    forceAppliedRef.current = false;
+
     const unsubscribeV = api.velocity.subscribe(v => {
       velocity.current = v;
+
+      // Apply initial impulse and torque only once, as soon as the physics worker is ready
+      // and starts transmitting state updates.
+      if (!forceAppliedRef.current) {
+        forceAppliedRef.current = true;
+        api.wakeUp();
+
+        const forceX = -3 + Math.random() * 6;
+        const forceY = -2 - Math.random() * 4;
+        const forceZ = -3 + Math.random() * 6;
+
+        api.applyImpulse([forceX, forceY, forceZ], [0, half, 0]);
+        api.applyTorque([
+          (Math.random() * 10) + 15,
+          (Math.random() * 10) + 15,
+          (Math.random() * 10) + 15
+        ]);
+      }
     });
+
     const unsubscribeQ = api.quaternion.subscribe(q => {
       quaternion.current = q;
     });
+
     return () => {
       unsubscribeV();
       unsubscribeQ();
     };
-  }, [api]);
-
-  useEffect(() => {
-    // Apply initial random impulse and torque to throw the die
-    const forceX = -3 + Math.random() * 6;
-    const forceY = -2 - Math.random() * 4;
-    const forceZ = -3 + Math.random() * 6;
-
-    api.applyImpulse([forceX, forceY, forceZ], [0, half, 0]);
-    api.applyTorque([
-      (Math.random() * 10) + 15,
-      (Math.random() * 10) + 15,
-      (Math.random() * 10) + 15
-    ]);
   }, [api, half]);
 
   // Adjust cursor style dynamically on hover
@@ -224,11 +261,13 @@ export function Die3D({ index, value, onTap, onSettle, preset, diceScale }: Die3
         >
           <boxGeometry args={[scale, scale, scale]} />
           <meshStandardMaterial 
-            color={dieColor} 
+            color={isSelected ? selectedDieColor : dieColor} 
             roughness={0.05} 
             metalness={theme === 'light' ? 0.3 : 0.9} 
             transparent
-            opacity={dieOpacity}
+            opacity={isSelected ? 0.9 : dieOpacity}
+            emissive={new THREE.Color(selectedEmissive)}
+            emissiveIntensity={selectedEmissiveIntensity}
           />
         </mesh>
 
@@ -236,12 +275,25 @@ export function Die3D({ index, value, onTap, onSettle, preset, diceScale }: Die3
         <mesh raycast={() => null}>
           <boxGeometry args={[scale * 1.02, scale * 1.02, scale * 1.02]} />
           <meshBasicMaterial 
-            color={colorAccent} 
+            color={isSelected ? selectionColor : colorAccent} 
             wireframe 
             transparent
-            opacity={hovered ? 0.65 : 0.35} // Highlight glow on hover!
+            opacity={isSelected ? 0.75 : (hovered ? 0.65 : 0.35)} // Highlight glow on hover!
           />
         </mesh>
+
+        {/* Double-line glow outline for selected die */}
+        {isSelected && (
+          <mesh raycast={() => null}>
+            <boxGeometry args={[scale * 1.05, scale * 1.05, scale * 1.05]} />
+            <meshBasicMaterial 
+              color={selectionColor} 
+              wireframe 
+              transparent
+              opacity={0.22}
+            />
+          </mesh>
+        )}
 
         {/* ========================================================
            Simultaneous 3D Pips Rendering (All 6 faces active)
@@ -250,47 +302,47 @@ export function Die3D({ index, value, onTap, onSettle, preset, diceScale }: Die3
         {/* Face 1 (Top, y = +faceOffset) */}
         <mesh position={[0, faceOffset, 0]} raycast={() => null}>
           <boxGeometry args={[scale * 0.16, 0.01, scale * 0.16]} />
-          <meshBasicMaterial color={colorAccent} />
+          <meshBasicMaterial color={isSelected ? selectionColor : colorAccent} />
         </mesh>
 
         {/* Face 6 (Bottom, y = -faceOffset) */}
         <group raycast={() => null}>
-          <mesh position={[-0.25 * r, -faceOffset, -0.3 * r]} raycast={() => null}><boxGeometry args={[scale * 0.12, 0.01, scale * 0.12]} /><meshBasicMaterial color={colorAccent} /></mesh>
-          <mesh position={[0.25 * r, -faceOffset, -0.3 * r]} raycast={() => null}><boxGeometry args={[scale * 0.12, 0.01, scale * 0.12]} /><meshBasicMaterial color={colorAccent} /></mesh>
-          <mesh position={[-0.25 * r, -faceOffset, 0]} raycast={() => null}><boxGeometry args={[scale * 0.12, 0.01, scale * 0.12]} /><meshBasicMaterial color={colorAccent} /></mesh>
-          <mesh position={[0.25 * r, -faceOffset, 0]} raycast={() => null}><boxGeometry args={[scale * 0.12, 0.01, scale * 0.12]} /><meshBasicMaterial color={colorAccent} /></mesh>
-          <mesh position={[-0.25 * r, -faceOffset, 0.3 * r]} raycast={() => null}><boxGeometry args={[scale * 0.12, 0.01, scale * 0.12]} /><meshBasicMaterial color={colorAccent} /></mesh>
-          <mesh position={[0.25 * r, -faceOffset, 0.3 * r]} raycast={() => null}><boxGeometry args={[scale * 0.12, 0.01, scale * 0.12]} /><meshBasicMaterial color={colorAccent} /></mesh>
+          <mesh position={[-0.25 * r, -faceOffset, -0.3 * r]} raycast={() => null}><boxGeometry args={[scale * 0.12, 0.01, scale * 0.12]} /><meshBasicMaterial color={isSelected ? selectionColor : colorAccent} /></mesh>
+          <mesh position={[0.25 * r, -faceOffset, -0.3 * r]} raycast={() => null}><boxGeometry args={[scale * 0.12, 0.01, scale * 0.12]} /><meshBasicMaterial color={isSelected ? selectionColor : colorAccent} /></mesh>
+          <mesh position={[-0.25 * r, -faceOffset, 0]} raycast={() => null}><boxGeometry args={[scale * 0.12, 0.01, scale * 0.12]} /><meshBasicMaterial color={isSelected ? selectionColor : colorAccent} /></mesh>
+          <mesh position={[0.25 * r, -faceOffset, 0]} raycast={() => null}><boxGeometry args={[scale * 0.12, 0.01, scale * 0.12]} /><meshBasicMaterial color={isSelected ? selectionColor : colorAccent} /></mesh>
+          <mesh position={[-0.25 * r, -faceOffset, 0.3 * r]} raycast={() => null}><boxGeometry args={[scale * 0.12, 0.01, scale * 0.12]} /><meshBasicMaterial color={isSelected ? selectionColor : colorAccent} /></mesh>
+          <mesh position={[0.25 * r, -faceOffset, 0.3 * r]} raycast={() => null}><boxGeometry args={[scale * 0.12, 0.01, scale * 0.12]} /><meshBasicMaterial color={isSelected ? selectionColor : colorAccent} /></mesh>
         </group>
 
         {/* Face 5 (Front, z = +faceOffset) */}
         <group raycast={() => null}>
-          <mesh position={[-0.3 * r, 0.3 * r, faceOffset]} raycast={() => null}><boxGeometry args={[scale * 0.12, scale * 0.12, 0.01]} /><meshBasicMaterial color={colorAccent} /></mesh>
-          <mesh position={[0.3 * r, 0.3 * r, faceOffset]} raycast={() => null}><boxGeometry args={[scale * 0.12, scale * 0.12, 0.01]} /><meshBasicMaterial color={colorAccent} /></mesh>
-          <mesh position={[0, 0, faceOffset]} raycast={() => null}><boxGeometry args={[scale * 0.12, scale * 0.12, 0.01]} /><meshBasicMaterial color={colorAccent} /></mesh>
-          <mesh position={[-0.3 * r, -0.3 * r, faceOffset]} raycast={() => null}><boxGeometry args={[scale * 0.12, scale * 0.12, 0.01]} /><meshBasicMaterial color={colorAccent} /></mesh>
-          <mesh position={[0.3 * r, -0.3 * r, faceOffset]} raycast={() => null}><boxGeometry args={[scale * 0.12, scale * 0.12, 0.01]} /><meshBasicMaterial color={colorAccent} /></mesh>
+          <mesh position={[-0.3 * r, 0.3 * r, faceOffset]} raycast={() => null}><boxGeometry args={[scale * 0.12, scale * 0.12, 0.01]} /><meshBasicMaterial color={isSelected ? selectionColor : colorAccent} /></mesh>
+          <mesh position={[0.3 * r, 0.3 * r, faceOffset]} raycast={() => null}><boxGeometry args={[scale * 0.12, scale * 0.12, 0.01]} /><meshBasicMaterial color={isSelected ? selectionColor : colorAccent} /></mesh>
+          <mesh position={[0, 0, faceOffset]} raycast={() => null}><boxGeometry args={[scale * 0.12, scale * 0.12, 0.01]} /><meshBasicMaterial color={isSelected ? selectionColor : colorAccent} /></mesh>
+          <mesh position={[-0.3 * r, -0.3 * r, faceOffset]} raycast={() => null}><boxGeometry args={[scale * 0.12, scale * 0.12, 0.01]} /><meshBasicMaterial color={isSelected ? selectionColor : colorAccent} /></mesh>
+          <mesh position={[0.3 * r, -0.3 * r, faceOffset]} raycast={() => null}><boxGeometry args={[scale * 0.12, scale * 0.12, 0.01]} /><meshBasicMaterial color={isSelected ? selectionColor : colorAccent} /></mesh>
         </group>
 
         {/* Face 2 (Back, z = -faceOffset) */}
         <group raycast={() => null}>
-          <mesh position={[-0.3 * r, 0.3 * r, -faceOffset]} raycast={() => null}><boxGeometry args={[scale * 0.12, scale * 0.12, 0.01]} /><meshBasicMaterial color={colorAccent} /></mesh>
-          <mesh position={[0.3 * r, -0.3 * r, -faceOffset]} raycast={() => null}><boxGeometry args={[scale * 0.12, scale * 0.12, 0.01]} /><meshBasicMaterial color={colorAccent} /></mesh>
+          <mesh position={[-0.3 * r, 0.3 * r, -faceOffset]} raycast={() => null}><boxGeometry args={[scale * 0.12, scale * 0.12, 0.01]} /><meshBasicMaterial color={isSelected ? selectionColor : colorAccent} /></mesh>
+          <mesh position={[0.3 * r, -0.3 * r, -faceOffset]} raycast={() => null}><boxGeometry args={[scale * 0.12, scale * 0.12, 0.01]} /><meshBasicMaterial color={isSelected ? selectionColor : colorAccent} /></mesh>
         </group>
 
         {/* Face 4 (Left, x = -faceOffset) */}
         <group raycast={() => null}>
-          <mesh position={[-faceOffset, 0.3 * r, 0.3 * r]} raycast={() => null}><boxGeometry args={[0.01, scale * 0.12, scale * 0.12]} /><meshBasicMaterial color={colorAccent} /></mesh>
-          <mesh position={[-faceOffset, 0.3 * r, -0.3 * r]} raycast={() => null}><boxGeometry args={[0.01, scale * 0.12, scale * 0.12]} /><meshBasicMaterial color={colorAccent} /></mesh>
-          <mesh position={[-faceOffset, -0.3 * r, 0.3 * r]} raycast={() => null}><boxGeometry args={[0.01, scale * 0.12, scale * 0.12]} /><meshBasicMaterial color={colorAccent} /></mesh>
-          <mesh position={[-faceOffset, -0.3 * r, -0.3 * r]} raycast={() => null}><boxGeometry args={[0.01, scale * 0.12, scale * 0.12]} /><meshBasicMaterial color={colorAccent} /></mesh>
+          <mesh position={[-faceOffset, 0.3 * r, 0.3 * r]} raycast={() => null}><boxGeometry args={[0.01, scale * 0.12, scale * 0.12]} /><meshBasicMaterial color={isSelected ? selectionColor : colorAccent} /></mesh>
+          <mesh position={[-faceOffset, 0.3 * r, -0.3 * r]} raycast={() => null}><boxGeometry args={[0.01, scale * 0.12, scale * 0.12]} /><meshBasicMaterial color={isSelected ? selectionColor : colorAccent} /></mesh>
+          <mesh position={[-faceOffset, -0.3 * r, 0.3 * r]} raycast={() => null}><boxGeometry args={[0.01, scale * 0.12, scale * 0.12]} /><meshBasicMaterial color={isSelected ? selectionColor : colorAccent} /></mesh>
+          <mesh position={[-faceOffset, -0.3 * r, -0.3 * r]} raycast={() => null}><boxGeometry args={[0.01, scale * 0.12, scale * 0.12]} /><meshBasicMaterial color={isSelected ? selectionColor : colorAccent} /></mesh>
         </group>
 
         {/* Face 3 (Right, x = +faceOffset) */}
         <group raycast={() => null}>
-          <mesh position={[faceOffset, 0.3 * r, 0.3 * r]} raycast={() => null}><boxGeometry args={[0.01, scale * 0.12, scale * 0.12]} /><meshBasicMaterial color={colorAccent} /></mesh>
-          <mesh position={[faceOffset, 0, 0]} raycast={() => null}><boxGeometry args={[0.01, scale * 0.12, scale * 0.12]} /><meshBasicMaterial color={colorAccent} /></mesh>
-          <mesh position={[faceOffset, -0.3 * r, -0.3 * r]} raycast={() => null}><boxGeometry args={[0.01, scale * 0.12, scale * 0.12]} /><meshBasicMaterial color={colorAccent} /></mesh>
+          <mesh position={[faceOffset, 0.3 * r, 0.3 * r]} raycast={() => null}><boxGeometry args={[0.01, scale * 0.12, scale * 0.12]} /><meshBasicMaterial color={isSelected ? selectionColor : colorAccent} /></mesh>
+          <mesh position={[faceOffset, 0, 0]} raycast={() => null}><boxGeometry args={[0.01, scale * 0.12, scale * 0.12]} /><meshBasicMaterial color={isSelected ? selectionColor : colorAccent} /></mesh>
+          <mesh position={[faceOffset, -0.3 * r, -0.3 * r]} raycast={() => null}><boxGeometry args={[0.01, scale * 0.12, scale * 0.12]} /><meshBasicMaterial color={isSelected ? selectionColor : colorAccent} /></mesh>
         </group>
       </group>
     </group>

@@ -176,6 +176,7 @@ export function SandboxDebugView({ preset, onBack }: { preset: 'green' | 'amber'
           rollId={sandboxRollId}
           preset={preset}
           debugConfig={debugConfig}
+          selectedIndexes={selectedIndexes}
         />
 
         {/* Action Controls */}

@@ -10,6 +10,7 @@ interface GamePlayViewProps {
   myUserId: string;
   activeRoll: number[] | null;
   diceToRoll: number | null;
+  rollId: number;
   submitRollResults: (dice: number[]) => void;
   clearActiveRoll: () => void;
   onRollDice: () => void;
@@ -23,6 +24,7 @@ export function GamePlayView({
   myUserId,
   activeRoll,
   diceToRoll,
+  rollId,
   submitRollResults,
   clearActiveRoll,
   onRollDice,
@@ -131,7 +133,8 @@ export function GamePlayView({
               
               <DiceScene 
                 diceCount={diceCount}
-                rollId={activePlayer?.rollsCount || 0}
+                rollId={rollId}
+                targetValues={isPhysicsRolling ? undefined : (activeRoll || undefined)}
                 onTapDie={handleTapDie}
                 onRollComplete={(values) => {
                   if (isPhysicsRolling) {
@@ -139,6 +142,7 @@ export function GamePlayView({
                   }
                 }}
                 preset={preset}
+                selectedIndexes={selectedIndexes}
               />
 
               {/* Action buttons */}

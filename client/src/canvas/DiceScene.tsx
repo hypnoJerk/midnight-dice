@@ -29,6 +29,7 @@ interface DiceSceneProps {
   rollId: number;
   preset: 'green' | 'amber';
   debugConfig?: DebugConfig;
+  selectedIndexes?: number[];
 }
 
 /**
@@ -57,7 +58,16 @@ function CameraController({
   return null;
 }
 
-export function DiceScene({ diceCount, targetValues, onTapDie, onRollComplete, rollId, preset, debugConfig }: DiceSceneProps) {
+export function DiceScene({ 
+  diceCount, 
+  targetValues, 
+  onTapDie, 
+  onRollComplete, 
+  rollId, 
+  preset, 
+  debugConfig,
+  selectedIndexes = []
+}: DiceSceneProps) {
   const { theme } = useTheme();
 
   // Tracks the face-up values of settled dice
@@ -157,6 +167,7 @@ export function DiceScene({ diceCount, targetValues, onTapDie, onRollComplete, r
               onSettle={handleDieSettle}
               preset={preset}
               diceScale={diceScale}
+              isSelected={selectedIndexes.includes(idx)}
             />
           ))}
         </Physics>
