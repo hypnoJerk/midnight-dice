@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Room, getRunningScore } from 'shared/types.js';
 import Scoreboard from './Scoreboard.js';
 import KeepZone from './KeepZone.js';
@@ -36,7 +36,9 @@ export function GamePlayView({
   const [selectedIndexes, setSelectedIndexes] = useState<number[]>([]);
   const [isDqBust, setIsDqBust] = useState(false);
   const [showDqModal, setShowDqModal] = useState(false);
-  const [hasTriggeredDq, setHasTriggeredDq] = useState(false);
+ 
+  const mePlayer = room.players.find(p => p.id === myUserId);
+  const isMeDq = !!mePlayer?.isDQ;
 
   const activePlayer = room.players[room.activePlayerIndex];
   const isActive = activePlayer?.id === myUserId;
@@ -52,34 +54,29 @@ export function GamePlayView({
 
   // Capture DQ occurrences for active player
   useEffect(() => {
-    const mePlayer = room.players.find(p => p.id === myUserId);
-    if (mePlayer?.isDQ) {
-      if (!hasTriggeredDq) {
-        setHasTriggeredDq(true);
-        setIsDqBust(true);
-        playDq();
-        
-        // Trigger temporary violent shake and then show pop-up
-        const modalTimer = setTimeout(() => {
-          setShowDqModal(true);
-        }, 1000);
+    if (isMeDq) {
+      setIsDqBust(true);
+      playDq();
+      
+      // Trigger temporary violent shake and then show pop-up
+      const modalTimer = setTimeout(() => {
+        setShowDqModal(true);
+      }, 1000);
 
-        // Stop shaking after 3 seconds
-        const shakeTimer = setTimeout(() => {
-          setIsDqBust(false);
-        }, 3000);
+      // Stop shaking after 3 seconds
+      const shakeTimer = setTimeout(() => {
+        setIsDqBust(false);
+      }, 3000);
    
-        return () => {
-          clearTimeout(modalTimer);
-          clearTimeout(shakeTimer);
-        };
-      }
-    } else if (room.gameState === 'PLAYING' && !mePlayer?.isDQ) {
-      setHasTriggeredDq(false);
+      return () => {
+        clearTimeout(modalTimer);
+        clearTimeout(shakeTimer);
+      };
+    } else {
       setIsDqBust(false);
       setShowDqModal(false);
     }
-  }, [room.players, myUserId, playDq, hasTriggeredDq, room.gameState]);
+  }, [isMeDq]);
 
   const handleTapDie = (index: number) => {
     playClick();
@@ -112,98 +109,6 @@ export function GamePlayView({
       gap: '16px',
       transition: 'var(--transition-smooth)'
     }}>
-      {/* Turn Transition Screen Overlay */}
-      {room.turnTransition && (
-        <div style={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          width: '100%',
-          height: '100%',
-          background: 'var(--crt-bg)',
-          opacity: 0.96,
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 9999,
-          border: '2px solid var(--crt-border)',
-          borderRadius: '4px',
-          boxShadow: 'var(--crt-glow-strong)',
-          gap: '16px',
-          padding: '24px',
-          animation: 'crt-flicker 0.15s infinite'
-        }}>
-          <span className="crt-flicker-layer" style={{ animationDuration: '0.15s' }} />
-          <div style={{
-            fontFamily: 'Press Start 2P, monospace',
-            fontSize: '0.65rem',
-            color: 'var(--crt-text-secondary)',
-            letterSpacing: '0.1em'
-          }}>
-            [ TRANSMISSION INTERRUPT ]
-          </div>
-          
-          <h2 style={{
-            fontSize: '2rem',
-            color: 'var(--crt-text)',
-            textAlign: 'center',
-            fontFamily: 'VT323, monospace',
-          }}>
-            {room.turnTransition.playerName.toUpperCase()} FINISHED TURN!
-          </h2>
-
-          <div style={{
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            gap: '8px',
-            background: 'rgba(0, 0, 0, 0.5)',
-            border: '1px dashed var(--crt-border-muted)',
-            padding: '16px 32px',
-            borderRadius: '4px'
-          }}>
-            {room.turnTransition.isDQ ? (
-              <span style={{
-                color: 'var(--color-danger)',
-                fontSize: '2.5rem',
-                fontWeight: 'bold',
-                fontFamily: 'VT323, monospace',
-                textShadow: 'var(--color-danger-glow)'
-              }}>
-                BUSTED! (0 PTS)
-              </span>
-            ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                <span style={{
-                  color: (preset === 'amber' ? '#00ff66' : '#ffb000'), // Contrast colors
-                  fontSize: '3rem',
-                  fontWeight: 'bold',
-                  fontFamily: 'VT323, monospace',
-                  textShadow: (preset === 'amber' ? '0 0 10px rgba(0, 255, 102, 0.8)' : '0 0 10px rgba(255, 176, 0, 0.8)')
-                }}>
-                  {room.turnTransition.score} PTS
-                </span>
-                {room.turnTransition.isShootout && (
-                  <span style={{ fontSize: '0.6rem', color: 'var(--crt-text-muted)', fontFamily: 'Press Start 2P', marginTop: '4px' }}>
-                    SHOOTOUT SCORE
-                  </span>
-                )}
-              </div>
-            )}
-          </div>
-
-          <div style={{
-            fontSize: '0.6rem',
-            color: 'var(--crt-text-muted)',
-            fontFamily: 'Press Start 2P, monospace',
-            marginTop: '8px'
-          }}>
-            NEXT TURN BEGINS IN 3S...
-          </div>
-        </div>
-      )}
-
       {/* 1. Header status bar */}
       <div style={{
         display: 'flex',
@@ -448,7 +353,14 @@ export function GamePlayView({
             <div style={{ fontSize: '1.2rem', marginBottom: '20px', color: 'var(--crt-text-secondary)' }}>
               BUST! Failed to keep both a 1 and a 4 by the end of your turn.
             </div>
-            <button onClick={() => setShowDqModal(false)} className="btn-retro" style={{ borderColor: 'var(--color-danger)', color: 'var(--color-danger)' }}>
+             <button 
+              onClick={() => {
+                setShowDqModal(false);
+                setIsDqBust(false);
+              }} 
+              className="btn-retro" 
+              style={{ borderColor: 'var(--color-danger)', color: 'var(--color-danger)' }}
+            >
               ACKNOWLEDGE
             </button>
           </div>

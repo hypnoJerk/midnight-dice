@@ -303,6 +303,111 @@ function GameAppInner() {
         )}
       </main>
 
+      {/* Global Turn Transition Screen Override */}
+      {room && room.turnTransition && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          width: '100vw',
+          height: '100vh',
+          background: 'var(--crt-bg)',
+          opacity: 0.98,
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 99999,
+          padding: '24px',
+          animation: 'crt-flicker 0.15s infinite',
+          boxSizing: 'border-box'
+        }}>
+          <span className="crt-flicker-layer" style={{ animationDuration: '0.15s' }} />
+          
+          <div style={{
+            border: '2px solid var(--crt-border)',
+            boxShadow: 'var(--crt-glow-strong)',
+            background: 'var(--crt-bg-panel)',
+            padding: '40px',
+            borderRadius: '8px',
+            textAlign: 'center',
+            maxWidth: '500px',
+            width: '100%',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '24px',
+            position: 'relative'
+          }}>
+            <div style={{
+              fontFamily: 'Press Start 2P, monospace',
+              fontSize: '0.75rem',
+              color: 'var(--crt-text-secondary)',
+              letterSpacing: '0.15em'
+            }}>
+              [ SYSTEM INTERRUPT ]
+            </div>
+            
+            <h2 style={{
+              fontSize: '2.5rem',
+              color: 'var(--crt-text)',
+              fontFamily: 'VT323, monospace',
+              margin: 0
+            }}>
+              {room.turnTransition.playerName.toUpperCase()}<br/>FINISHED TURN!
+            </h2>
+
+            <div style={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: '12px',
+              background: 'rgba(0, 0, 0, 0.6)',
+              border: '1px dashed var(--crt-border-muted)',
+              padding: '24px 40px',
+              borderRadius: '4px'
+            }}>
+              {room.turnTransition.isDQ ? (
+                <span style={{
+                  color: 'var(--color-danger)',
+                  fontSize: '3rem',
+                  fontWeight: 'bold',
+                  fontFamily: 'VT323, monospace',
+                  textShadow: 'var(--color-danger-glow)'
+                }}>
+                  BUSTED!
+                </span>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
+                  <span style={{
+                    color: (preset === 'amber' ? '#00ff66' : '#ffb000'), // Contrast colors
+                    fontSize: '4rem',
+                    fontWeight: 'bold',
+                    fontFamily: 'VT323, monospace',
+                    lineHeight: '1',
+                    textShadow: (preset === 'amber' ? '0 0 12px rgba(0, 255, 102, 0.8)' : '0 0 12px rgba(255, 176, 0, 0.8)')
+                  }}>
+                    {room.turnTransition.score} PTS
+                  </span>
+                  {room.turnTransition.isShootout && (
+                    <span style={{ fontSize: '0.65rem', color: 'var(--crt-text-muted)', fontFamily: 'Press Start 2P', marginTop: '4px' }}>
+                      SHOOTOUT SCORE
+                    </span>
+                  )}
+                </div>
+              )}
+            </div>
+
+            <div style={{
+              fontSize: '0.65rem',
+              color: 'var(--crt-text-muted)',
+              fontFamily: 'Press Start 2P, monospace',
+            }}>
+              PREPARING NEXT TRANSFERS...
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Global CRT scanlines overlay */}
       <CRTOverlay />
     </div>
