@@ -5,7 +5,8 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import { RoomManager } from './game/roomManager.js';
 import { initializeSockets } from './socket/connection.js';
-import { getLeaderboard, getRecentMatches, recordMatch, upsertUser } from './db/queries.js';
+import { getLeaderboard, getRecentMatches, recordMatch, upsertUser, getUserByUsername, createUser } from './db/queries.js';
+import { hashPassword, verifyPassword } from './db/auth.js';
 
 dotenv.config();
 
@@ -75,7 +76,58 @@ app.get('/api/matches', async (req, res) => {
   }
 });
 
-// 3. Register Player / Caches displays name with persistent UUID
+// 3. Register New Player with Password
+app.post('/api/auth/register', async (req, res) => {
+  const { username, password } = req.body;
+  if (!username || !password) {
+    return res.status(400).json({ error: 'Missing username or password' });
+  }
+
+  try {
+    const cleanUsername = username.trim().toUpperCase();
+    if (!cleanUsername) {
+      return res.status(400).json({ error: 'Invalid username' });
+    }
+
+    const existingUser = await getUserByUsername(cleanUsername);
+    if (existingUser) {
+      return res.status(409).json({ error: 'Username already exists' });
+    }
+
+    const passwordHash = hashPassword(password);
+    const user = await createUser(cleanUsername, passwordHash);
+    res.status(200).json({ id: user.id, displayName: user.displayName });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message || 'Failed to create user account' });
+  }
+});
+
+// 4. Authenticate & Login Player
+app.post('/api/auth/login', async (req, res) => {
+  const { username, password } = req.body;
+  if (!username || !password) {
+    return res.status(400).json({ error: 'Missing username or password' });
+  }
+
+  try {
+    const cleanUsername = username.trim().toUpperCase();
+    const user = await getUserByUsername(cleanUsername);
+    if (!user) {
+      return res.status(404).json({ error: 'Username does not exist' });
+    }
+
+    const isPasswordValid = verifyPassword(password, user.password);
+    if (!isPasswordValid) {
+      return res.status(401).json({ error: 'Invalid login' });
+    }
+
+    res.status(200).json({ id: user.id, displayName: user.displayName });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message || 'Failed to authenticate player' });
+  }
+});
+
+// Keep a legacy register endpoint for backward compatibility
 app.post('/api/users/register', async (req, res) => {
   const { userId, displayName } = req.body;
   if (!userId || !displayName) {

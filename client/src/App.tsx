@@ -30,19 +30,29 @@ function GameAppInner() {
     keepDice,
     leaveRoom,
     initiateRematch,
-    isConnected
+    isConnected,
+    loginUser,
+    logoutUser
   } = useGame();
 
+  const [usernameInput, setUsernameInput] = useState('');
+  const [passwordInput, setPasswordInput] = useState('');
+  const [authError, setAuthError] = useState<string | null>(null);
+  const [isAuthenticating, setIsAuthenticating] = useState(false);
   const [displayName, setDisplayName] = useState(
     localStorage.getItem('midnight_display_name') || ''
   );
   const [roomCode, setRoomCode] = useState('');
-  const [isRegistering, setIsRegistering] = useState(false);
   const [isSandbox, setIsSandbox] = useState(false);
   const [showLeaderboard, setShowLeaderboard] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
 
   const prevRoundTransitionRef = useRef<any>(null);
+
+  // Sync displayName with local storage when userId changes
+  useEffect(() => {
+    setDisplayName(localStorage.getItem('midnight_display_name') || '');
+  }, [userId]);
 
   // Trigger procedural 8-bit victory success chime when round transition starts
   useEffect(() => {
@@ -52,38 +62,66 @@ function GameAppInner() {
     prevRoundTransitionRef.current = room?.roundTransition;
   }, [room?.roundTransition, playSuccess]);
 
-  const saveDisplayName = (name: string) => {
-    setDisplayName(name);
-    localStorage.setItem('midnight_display_name', name);
-  };
-
-  const handleRegisterAndAction = async (action: 'create' | 'join') => {
+  const handleAuth = async (action: 'login' | 'create') => {
     playClick();
-    if (!displayName.trim()) return;
+    setAuthError(null);
 
-    setIsRegistering(true);
+    const cleanUsername = usernameInput.trim().toUpperCase();
+    if (!cleanUsername) {
+      setAuthError('USERNAME REQUIRED');
+      return;
+    }
+    if (!passwordInput) {
+      setAuthError('PASSWORD REQUIRED');
+      return;
+    }
+
+    setIsAuthenticating(true);
     try {
-      await fetch('/api/users/register', {
+      const endpoint = action === 'create' ? '/api/auth/register' : '/api/auth/login';
+      const response = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId, displayName })
+        body: JSON.stringify({ username: cleanUsername, password: passwordInput })
       });
-      
-      if (action === 'create') {
-        createRoom(displayName);
-      } else {
-        joinRoom(displayName, roomCode);
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        // Map backend responses to exact required retro displays
+        if (action === 'create' && response.status === 409) {
+          setAuthError('USERNAME ALREADY EXISTS. TRY A DIFFERENT NAME.');
+        } else if (action === 'login' && response.status === 404) {
+          setAuthError('USERNAME DOES NOT EXIST.');
+        } else if (action === 'login' && response.status === 401) {
+          setAuthError('INVALID LOGIN.');
+        } else {
+          setAuthError((data.error || 'AUTHENTICATION FAILED.').toUpperCase());
+        }
+        return;
       }
-    } catch (err) {
-      console.error('Failed to register identity to Postgres:', err);
-      if (action === 'create') {
-        createRoom(displayName);
-      } else {
-        joinRoom(displayName, roomCode);
-      }
+
+      loginUser(data.id, data.displayName);
+      setUsernameInput('');
+      setPasswordInput('');
+    } catch (err: any) {
+      console.error(err);
+      setAuthError('SYSTEM OFFLINE. TRY AGAIN LATER.');
     } finally {
-      setIsRegistering(false);
+      setIsAuthenticating(false);
     }
+  };
+
+  const handleHostRoom = () => {
+    playClick();
+    if (!displayName) return;
+    createRoom(displayName);
+  };
+
+  const handleJoinRoom = () => {
+    playClick();
+    if (!displayName || roomCode.length !== 4) return;
+    joinRoom(displayName, roomCode);
   };
 
   return (
@@ -223,8 +261,8 @@ function GameAppInner() {
           <LeaderboardView onClose={() => setShowLeaderboard(false)} preset={preset} myUserId={userId} />
         ) : (
           <>
-            {/* 2. Registration lobby view */}
-            {!room && (
+            {/* 2. Unauthenticated Login/Create form */}
+            {!room && !userId && (
               <div className="terminal-panel" style={{
                 width: '100%',
                 maxWidth: '440px',
@@ -250,15 +288,34 @@ function GameAppInner() {
                   </p>
                 </div>
 
+                {authError && (
+                  <div style={{
+                    background: 'rgba(255, 51, 51, 0.1)',
+                    border: '2px solid var(--color-danger)',
+                    color: 'var(--color-danger)',
+                    padding: '12px',
+                    borderRadius: '4px',
+                    textAlign: 'center',
+                    fontSize: '0.75rem',
+                    fontFamily: 'Press Start 2P, monospace',
+                    lineHeight: '1.4',
+                    boxShadow: 'var(--color-danger-glow)',
+                    textTransform: 'uppercase'
+                  }}>
+                    {authError}
+                  </div>
+                )}
+
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                   <label style={{ fontSize: '0.8rem', color: 'var(--crt-text-secondary)' }}>
-                    INPUT DISP_NAME:
+                    AGENT CODENAME:
                   </label>
                   <input
                     type="text"
-                    placeholder="e.g. USERNAME"
-                    value={displayName}
-                    onChange={(e) => saveDisplayName(e.target.value.toUpperCase())}
+                    placeholder="ENTER USERNAME"
+                    value={usernameInput}
+                    onChange={(e) => setUsernameInput(e.target.value.toUpperCase())}
+                    disabled={isAuthenticating}
                     style={{
                       background: 'rgba(0,0,0,0.8)',
                       border: '2px solid var(--crt-border-muted)',
@@ -270,15 +327,132 @@ function GameAppInner() {
                   />
                 </div>
 
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <label style={{ fontSize: '0.8rem', color: 'var(--crt-text-secondary)' }}>
+                    SECURITY KEYPASS:
+                  </label>
+                  <input
+                    type="password"
+                    placeholder="ENTER PASSWORD"
+                    value={passwordInput}
+                    onChange={(e) => setPasswordInput(e.target.value)}
+                    disabled={isAuthenticating}
+                    style={{
+                      background: 'rgba(0,0,0,0.8)',
+                      border: '2px solid var(--crt-border-muted)',
+                      borderRadius: '4px',
+                      padding: '12px',
+                      color: 'var(--crt-text)',
+                      boxShadow: 'inset 0 0 10px rgba(0,0,0,0.9)',
+                      letterSpacing: '0.1em'
+                    }}
+                  />
+                </div>
+
+                <hr style={{ border: '0', borderTop: '1px dashed var(--crt-border-muted)' }} />
+
+                <div style={{ display: 'flex', gap: '12px' }}>
+                  <button
+                    onClick={() => handleAuth('login')}
+                    disabled={isAuthenticating}
+                    className="btn-retro"
+                    style={{ flex: 1, fontSize: '1rem', padding: '12px' }}
+                  >
+                    {isAuthenticating ? 'LOGGING IN...' : 'LOGIN'}
+                  </button>
+                  <button
+                    onClick={() => handleAuth('create')}
+                    disabled={isAuthenticating}
+                    className="btn-retro"
+                    style={{ flex: 1, fontSize: '1rem', padding: '12px' }}
+                  >
+                    {isAuthenticating ? 'CREATING...' : 'CREATE'}
+                  </button>
+                </div>
+
+                <button
+                  onClick={() => { playClick(); setShowLeaderboard(true); }}
+                  className="btn-retro"
+                  style={{
+                    borderColor: 'var(--crt-text-secondary)',
+                    color: 'var(--crt-text-secondary)',
+                    fontFamily: 'Press Start 2P, monospace',
+                    fontSize: '0.55rem',
+                    padding: '12px',
+                    marginTop: '4px',
+                    width: '100%'
+                  }}
+                >
+                  ACCESS GLOBAL LEADERBOARD
+                </button>
+              </div>
+            )}
+
+            {/* 2b. Authenticated Host/Join game controls */}
+            {!room && userId && (
+              <div className="terminal-panel" style={{
+                width: '100%',
+                maxWidth: '440px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '20px'
+              }}>
+                <div style={{ textAlign: 'center', marginBottom: '8px' }}>
+                  <h1 style={{
+                    fontSize: '2.8rem',
+                    color: 'var(--crt-text)',
+                    letterSpacing: '0.1em'
+                  }}>
+                    MIDNIGHT
+                  </h1>
+                  <p style={{
+                    fontSize: '0.8rem',
+                    color: 'var(--crt-text-secondary)',
+                    letterSpacing: '0.05em',
+                    marginTop: '4px'
+                  }}>
+                    1-4-24 MULTIPLAYER RETRO PWA
+                  </p>
+                </div>
+
+                <div style={{
+                  background: 'rgba(0, 0, 0, 0.4)',
+                  border: '1px dashed var(--crt-border-muted)',
+                  padding: '12px 16px',
+                  borderRadius: '4px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: '12px'
+                }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                    <span style={{ fontSize: '0.65rem', color: 'var(--crt-text-muted)', fontFamily: 'Press Start 2P' }}>LOGGED IN AS</span>
+                    <span style={{ fontSize: '1.2rem', color: 'var(--crt-text)', textShadow: 'var(--crt-glow)' }}>{displayName}</span>
+                  </div>
+                  <button
+                    onClick={() => { playClick(); logoutUser(); }}
+                    className="btn-retro"
+                    style={{
+                      padding: '6px 12px',
+                      fontSize: '0.75rem',
+                      borderColor: 'var(--color-danger)',
+                      color: 'var(--color-danger)',
+                      boxShadow: 'none'
+                    }}
+                  >
+                    LOGOUT
+                  </button>
+                </div>
+
                 <hr style={{ border: '0', borderTop: '1px dashed var(--crt-border-muted)' }} />
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                   <button
-                    onClick={() => handleRegisterAndAction('create')}
-                    disabled={!displayName.trim() || isRegistering}
+                    onClick={handleHostRoom}
                     className="btn-retro"
+                    style={{ padding: '14px', fontSize: '1.1rem' }}
                   >
-                    {isRegistering ? 'INITIALIZING...' : 'HOST NEW MATCH'}
+                    HOST NEW MATCH
                   </button>
 
                   <div style={{
@@ -313,11 +487,12 @@ function GameAppInner() {
                       }}
                     />
                     <button
-                      onClick={() => handleRegisterAndAction('join')}
-                      disabled={!displayName.trim() || roomCode.length !== 4 || isRegistering}
+                      onClick={handleJoinRoom}
+                      disabled={roomCode.length !== 4}
                       className="btn-retro"
                       style={{ 
-                        borderColor: (displayName.trim() && roomCode.length === 4) ? 'var(--crt-border)' : 'var(--crt-border-muted)'
+                        borderColor: (roomCode.length === 4) ? 'var(--crt-border)' : 'var(--crt-border-muted)',
+                        padding: '14px'
                       }}
                     >
                       ENTER MATCH ROOM

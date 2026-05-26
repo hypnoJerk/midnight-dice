@@ -22,6 +22,7 @@ export async function upsertUser(id: string, displayName: string): Promise<User>
     .values({
       id,
       displayName,
+      password: 'legacy_unauthenticated',
       totalWins: 0,
       gamesPlayed: 0
     })
@@ -106,4 +107,32 @@ export async function getRecentMatches(limit = 10) {
     .leftJoin(users, eq(matches.winnerId, users.id))
     .orderBy(desc(matches.createdAt))
     .limit(limit);
+}
+
+/**
+ * Retrieves a user record by their unique username (displayName).
+ */
+export async function getUserByUsername(username: string): Promise<User | undefined> {
+  const [user] = await db
+    .select()
+    .from(users)
+    .where(eq(users.displayName, username))
+    .limit(1);
+  return user;
+}
+
+/**
+ * Creates a new user record with a unique username and a hashed password.
+ */
+export async function createUser(username: string, passwordHash: string): Promise<User> {
+  const [inserted] = await db
+    .insert(users)
+    .values({
+      displayName: username,
+      password: passwordHash,
+      totalWins: 0,
+      gamesPlayed: 0
+    })
+    .returning();
+  return inserted;
 }

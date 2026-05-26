@@ -11,14 +11,41 @@ export async function initializeDatabase(): Promise<void> {
   try {
     await client.query('BEGIN');
 
+    // Purge existing tables to reset the database and start over cleanly ONLY if explicitly requested via environment variables
+    if (process.env.PURGE_DB === 'true' || process.env.RESET_DB === 'true') {
+      console.log('[Database] PURGE_DB / RESET_DB flag detected. Purging existing tables for a clean restart...');
+      await client.query(`
+        DROP TABLE IF EXISTS match_participants CASCADE;
+        DROP TABLE IF EXISTS matches CASCADE;
+        DROP TABLE IF EXISTS users CASCADE;
+      `);
+    }
+
     // 1. Create users table
     await client.query(`
       CREATE TABLE IF NOT EXISTS users (
-        id UUID PRIMARY KEY,
-        display_name VARCHAR(255) NOT NULL,
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        display_name VARCHAR(255) NOT NULL UNIQUE,
+        password VARCHAR(255) NOT NULL,
         total_wins INTEGER DEFAULT 0 NOT NULL,
         games_played INTEGER DEFAULT 0 NOT NULL
       );
+    `);
+
+    // Safe DB upgrade: check and add columns/constraints for existing deployments
+    await client.query(`
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS password VARCHAR(255);
+      
+      DO $$
+      BEGIN
+        IF NOT EXISTS (
+          SELECT 1 FROM pg_constraint WHERE conname = 'users_display_name_key'
+        ) THEN
+          ALTER TABLE users ADD CONSTRAINT users_display_name_key UNIQUE (display_name);
+        END IF;
+      END $$;
+
+      ALTER TABLE users ALTER COLUMN id SET DEFAULT gen_random_uuid();
     `);
 
     // 2. Create matches table

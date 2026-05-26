@@ -2,7 +2,8 @@ import { pgTable, uuid, varchar, integer, timestamp, boolean, primaryKey } from 
 
 export const users = pgTable('users', {
   id: uuid('id').primaryKey().defaultRandom(),
-  displayName: varchar('display_name', { length: 255 }).notNull(),
+  displayName: varchar('display_name', { length: 255 }).notNull().unique(),
+  password: varchar('password', { length: 255 }).notNull(),
   totalWins: integer('total_wins').default(0).notNull(),
   gamesPlayed: integer('games_played').default(0).notNull(),
 });

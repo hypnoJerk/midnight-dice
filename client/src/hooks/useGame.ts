@@ -5,30 +5,27 @@ import { Room, RoomSyncPayload } from 'shared/types.js';
 export function useGame() {
   const [socket, setSocket] = useState<Socket | null>(null);
   const [room, setRoom] = useState<Room | null>(null);
-  const [userId, setUserId] = useState<string>('');
+  const [userId, setUserId] = useState<string>(
+    localStorage.getItem('midnight_user_uuid') || ''
+  );
   const [error, setError] = useState<string | null>(null);
   const [activeRoll, setActiveRoll] = useState<number[] | null>(null);
   const [diceToRoll, setDiceToRoll] = useState<number | null>(null);
   const [isConnected, setIsConnected] = useState(false);
   const [rollId, setRollId] = useState(0);
 
-  // Persistent User Identity Setup
+  // Initialize/re-initialize real-time WebSocket connection only when logged in
   useEffect(() => {
-    let uId = localStorage.getItem('midnight_user_uuid');
-    if (!uId) {
-      // Procedural fallback UUID generator for environments without crypto.randomUUID
-      uId = typeof crypto !== 'undefined' && crypto.randomUUID 
-        ? crypto.randomUUID() 
-        : 'user-' + Math.random().toString(36).substr(2, 9);
-      localStorage.setItem('midnight_user_uuid', uId);
+    if (!userId) {
+      setSocket(null);
+      setIsConnected(false);
+      return;
     }
-    setUserId(uId);
 
-    // Initialize real-time WebSocket connection
     const socketUrl = window.location.origin; // Proxied by Nginx
     const newSocket = io(socketUrl, {
       auth: {
-        userId: uId,
+        userId: userId,
         roomCode: localStorage.getItem('midnight_last_room_code') || undefined
       }
     });
@@ -60,7 +57,7 @@ export function useGame() {
       });
 
       // Synchronize activeRoll local state with the server's authoritative state
-      if (payload.activePlayerId === uId) {
+      if (payload.activePlayerId === userId) {
         if (activePlayer && activePlayer.diceActive && activePlayer.diceActive.length > 0) {
           setActiveRoll(activePlayer.diceActive);
         } else {
@@ -99,6 +96,24 @@ export function useGame() {
     return () => {
       newSocket.disconnect();
     };
+  }, [userId]);
+
+  const loginUser = useCallback((id: string, name: string) => {
+    localStorage.setItem('midnight_user_uuid', id);
+    localStorage.setItem('midnight_display_name', name);
+    setUserId(id);
+    setError(null);
+  }, []);
+
+  const logoutUser = useCallback(() => {
+    localStorage.removeItem('midnight_user_uuid');
+    localStorage.removeItem('midnight_display_name');
+    localStorage.removeItem('midnight_last_room_code');
+    setUserId('');
+    setRoom(null);
+    setDiceToRoll(null);
+    setActiveRoll(null);
+    setError(null);
   }, []);
 
   const createRoom = useCallback((hostName: string) => {
@@ -171,7 +186,9 @@ export function useGame() {
     keepDice,
     leaveRoom,
     initiateRematch,
-    isConnected
+    isConnected,
+    loginUser,
+    logoutUser
   };
 }
 export default useGame;
