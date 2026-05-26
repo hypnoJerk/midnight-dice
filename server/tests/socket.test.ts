@@ -142,4 +142,37 @@ describe('Socket Coordinator Integration & Authoritative Move Validation', () =>
       expect(payload.roomCode).toBe('ABCD');
     });
   });
+
+  describe('Multiplayer Rematch Flow', () => {
+    it('should correctly initiate rematch and start a new game when all players accept', () => {
+      const createCallback = registeredEvents.get('room:create');
+      createCallback!({ userId: 'user-A', hostName: 'Alice' });
+      const room = roomManager.getRoomByUserId('user-A')!;
+
+      // Join player B
+      roomManager.joinRoom('user-B', 'Bob', room.code);
+
+      // Artificially transition game to GAME_OVER to test rematch initiation
+      room.gameState = 'GAME_OVER';
+      room.winners = ['user-A'];
+
+      const rematchCallback = registeredEvents.get('room:rematch:initiate');
+      expect(rematchCallback).toBeDefined();
+
+      // Alice initiates rematch
+      rematchCallback!({ roomCode: room.code, userId: 'user-A' });
+      expect(room.rematch).toBeDefined();
+      expect(room.rematch?.acceptedPlayers).toContain('user-A');
+      expect(room.rematch?.acceptedPlayers.length).toBe(1);
+      expect(room.gameState).toBe('GAME_OVER'); // still waiting for Bob
+
+      // Bob accepts rematch -> since all players in room (Alice and Bob) accepted, it should execute immediately!
+      rematchCallback!({ roomCode: room.code, userId: 'user-B' });
+      expect(room.rematch).toBeNull();
+      expect(room.gameState).toBe('PLAYING');
+      expect(room.currentRound).toBe(1);
+      expect(room.players.length).toBe(2);
+      expect(room.players.find(p => p.id === 'user-A')?.roundWins).toBe(0);
+    });
+  });
 });

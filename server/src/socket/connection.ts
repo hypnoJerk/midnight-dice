@@ -16,7 +16,8 @@ export function buildSyncPayload(room: Room) {
     winners: room.winners,
     currentRound: room.currentRound || 1,
     turnTransition: room.turnTransition || null,
-    roundTransition: room.roundTransition || null
+    roundTransition: room.roundTransition || null,
+    rematch: room.rematch || null
   };
 }
 
@@ -216,6 +217,38 @@ export function initializeSockets(io: Server, roomManager: RoomManager) {
       }
     });
 
+    // 5b. Room Rematch
+    socket.on('room:rematch:initiate', ({ roomCode, userId }: { roomCode: string; userId: string }) => {
+      try {
+        if (!roomCode || !userId) {
+          return socket.emit('error', 'Missing roomCode or userId for rematch');
+        }
+        const updatedRoom = roomManager.initiateOrAcceptRematch(roomCode, userId, io);
+        io.to(roomCode.toUpperCase()).emit('room:sync', buildSyncPayload(updatedRoom));
+      } catch (err: any) {
+        socket.emit('error', err.message || 'Failed to process rematch request');
+      }
+    });
+
+    // 5c. Room Leave
+    socket.on('room:leave', ({ roomCode, userId }: { roomCode: string; userId: string }) => {
+      try {
+        if (!roomCode || !userId) {
+          return socket.emit('error', 'Missing roomCode or userId to leave');
+        }
+        const code = roomManager.leaveRoom(userId, io);
+        if (code) {
+          socket.leave(code);
+          const room = roomManager.getRoom(code);
+          if (room) {
+            io.to(code).emit('room:sync', buildSyncPayload(room));
+          }
+        }
+      } catch (err: any) {
+        socket.emit('error', err.message || 'Failed to leave room');
+      }
+    });
+
     // 6. Handle Disconnection
     socket.on('disconnect', () => {
       const { userId, roomCode } = roomManager.deregisterSocket(socket.id);
@@ -223,8 +256,13 @@ export function initializeSockets(io: Server, roomManager: RoomManager) {
       if (userId && roomCode) {
         const room = roomManager.getRoom(roomCode);
         if (room) {
-          // Send updated synchronization state to demonstrate disconnected status
-          io.to(roomCode).emit('room:sync', buildSyncPayload(room));
+          // If in rematch phase, we can clean them up too
+          if (room.rematch) {
+            roomManager.leaveRoom(userId, io);
+          } else {
+            // Send updated synchronization state to demonstrate disconnected status
+            io.to(roomCode).emit('room:sync', buildSyncPayload(room));
+          }
         }
       }
     });

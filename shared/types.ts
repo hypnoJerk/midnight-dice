@@ -36,6 +36,10 @@ export interface Room {
     roundNumber: number;
     winnerName: string;
   } | null;
+  rematch?: {
+    timerEndsAt: number;     // Millisecond timestamp when the 30s timer expires
+    acceptedPlayers: string[]; // List of player userIds who accepted the rematch
+  } | null;
 }
 
 // WebSocket Event Payloads
@@ -66,6 +70,10 @@ export interface RoomSyncPayload {
   roundTransition?: {
     roundNumber: number;
     winnerName: string;
+  } | null;
+  rematch?: {
+    timerEndsAt: number;
+    acceptedPlayers: string[];
   } | null;
 }
 

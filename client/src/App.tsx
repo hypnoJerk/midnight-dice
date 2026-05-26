@@ -28,6 +28,7 @@ function GameAppInner() {
     submitRollResults,
     keepDice,
     leaveRoom,
+    initiateRematch,
     isConnected
   } = useGame();
 
@@ -306,6 +307,7 @@ function GameAppInner() {
                 onRollDice={rollDice}
                 onKeepDice={keepDice}
                 onLeaveRoom={leaveRoom}
+                onInitiateRematch={initiateRematch}
                 preset={preset}
               />
             )}

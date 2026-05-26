@@ -55,7 +55,8 @@ export function useGame() {
         winners: payload.winners,
         currentRound: payload.currentRound,
         turnTransition: payload.turnTransition,
-        roundTransition: payload.roundTransition
+        roundTransition: payload.roundTransition,
+        rematch: payload.rematch || null
       });
 
       // Synchronize activeRoll local state with the server's authoritative state
@@ -70,6 +71,12 @@ export function useGame() {
       }
       
       localStorage.setItem('midnight_last_room_code', payload.roomCode);
+    });
+
+    newSocket.on('room:kicked', (payload: { reason: string }) => {
+      setRoom(null);
+      setError('You were left out of the rematch match.');
+      localStorage.removeItem('midnight_last_room_code');
     });
 
     newSocket.on('roll:start', (payload: { diceCount: number }) => {
@@ -141,6 +148,12 @@ export function useGame() {
     localStorage.removeItem('midnight_last_room_code');
   }, [socket, room, userId]);
 
+  const initiateRematch = useCallback(() => {
+    if (!socket || !room || !userId) return;
+    setError(null);
+    socket.emit('room:rematch:initiate', { roomCode: room.code, userId });
+  }, [socket, room, userId]);
+
   return {
     room,
     userId,
@@ -157,6 +170,7 @@ export function useGame() {
     submitRollResults,
     keepDice,
     leaveRoom,
+    initiateRematch,
     isConnected
   };
 }

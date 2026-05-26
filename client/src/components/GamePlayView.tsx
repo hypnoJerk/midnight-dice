@@ -16,6 +16,7 @@ interface GamePlayViewProps {
   onRollDice: () => void;
   onKeepDice: (diceIndexes: number[]) => void;
   onLeaveRoom: () => void;
+  onInitiateRematch: () => void;
   preset: 'green' | 'amber';
 }
 
@@ -30,11 +31,32 @@ export function GamePlayView({
   onRollDice,
   onKeepDice,
   onLeaveRoom,
+  onInitiateRematch,
   preset
 }: GamePlayViewProps) {
   const { playClick, playRoll, playSuccess, playDq } = useSound();
   const [selectedIndexes, setSelectedIndexes] = useState<number[]>([]);
   const [isDqBust, setIsDqBust] = useState(false);
+
+  // Rematch countdown logic
+  const [timeLeft, setTimeLeft] = useState<number>(0);
+
+  useEffect(() => {
+    if (!room?.rematch?.timerEndsAt) {
+      setTimeLeft(0);
+      return;
+    }
+
+    const updateTimer = () => {
+      const remaining = Math.max(0, Math.ceil((room.rematch!.timerEndsAt - Date.now()) / 1000));
+      setTimeLeft(remaining);
+    };
+
+    updateTimer();
+    const interval = setInterval(updateTimer, 200);
+
+    return () => clearInterval(interval);
+  }, [room?.rematch?.timerEndsAt]);
  
   const mePlayer = room.players.find(p => p.id === myUserId);
   const isMeDq = !!mePlayer?.isDQ;
@@ -278,32 +300,166 @@ export function GamePlayView({
       )}
 
       {/* 4. Game Over View */}
-      {room.gameState === 'GAME_OVER' && (
-        <div style={{
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          gap: '16px',
-          padding: '24px',
-          border: '2px solid #00ff66',
-          borderRadius: '4px',
-          background: 'rgba(0, 255, 102, 0.05)',
-          boxShadow: 'var(--crt-glow-strong)'
-        }}>
-          <h2 style={{ fontFamily: 'Press Start 2P, monospace', fontSize: '1rem', color: '#00ff66' }}>
-            MATCH COMPLETE
-          </h2>
-          <div style={{ fontSize: '1.2rem', textAlign: 'center' }}>
-            Winner(s):{' '}
-            <span style={{ color: '#00ff66', fontWeight: 'bold' }}>
-              {room.winners.map(id => room.players.find(p => p.id === id)?.name).join(', ')}
-            </span>
+      {room.gameState === 'GAME_OVER' && (() => {
+        const hasAccepted = room.rematch?.acceptedPlayers.includes(myUserId);
+        const accentColor = preset === 'amber' ? '#ffb000' : '#00ff66';
+        const glowShadow = preset === 'amber' ? '0 0 8px rgba(255, 176, 0, 0.8)' : '0 0 8px rgba(0, 255, 102, 0.8)';
+        
+        return (
+          <div style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: '20px',
+            padding: '24px',
+            border: `2px solid ${accentColor}`,
+            borderRadius: '4px',
+            background: `rgba(${preset === 'amber' ? '255, 176, 0' : '0, 255, 102'}, 0.05)`,
+            boxShadow: `0 0 15px rgba(${preset === 'amber' ? '255, 176, 0' : '0, 255, 102'}, 0.25)`,
+            width: '100%',
+            boxSizing: 'border-box'
+          }}>
+            <h2 style={{ 
+              fontFamily: 'Press Start 2P, monospace', 
+              fontSize: '1rem', 
+              color: accentColor,
+              textShadow: glowShadow,
+              margin: 0
+            }}>
+              MATCH COMPLETE
+            </h2>
+            <div style={{ fontSize: '1.2rem', textAlign: 'center', fontFamily: 'VT323, monospace', fontSize: '1.6rem' }}>
+              Winner(s):{' '}
+              <span style={{ color: accentColor, fontWeight: 'bold', textShadow: glowShadow }}>
+                {room.winners.map(id => room.players.find(p => p.id === id)?.name).join(', ')}
+              </span>
+            </div>
+
+            <hr style={{ width: '100%', border: '0', borderTop: '1px dashed var(--crt-border-muted)', margin: '4px 0' }} />
+
+            {/* Rematch Section */}
+            {!room.rematch ? (
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px', width: '100%' }}>
+                <div style={{ fontFamily: 'Press Start 2P', fontSize: '0.55rem', color: 'var(--crt-text-secondary)', textAlign: 'center' }}>
+                  WANT A REMATCH?
+                </div>
+                <button 
+                  onClick={onInitiateRematch} 
+                  className="btn-retro"
+                  style={{ 
+                    borderColor: accentColor, 
+                    color: accentColor,
+                    fontFamily: 'Press Start 2P, monospace',
+                    fontSize: '0.75rem',
+                    width: '100%',
+                    padding: '12px'
+                  }}
+                >
+                  [ INITIATE REMATCH ]
+                </button>
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px', width: '100%' }}>
+                {/* Flashing Timer Countdown */}
+                <div style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  background: 'rgba(0,0,0,0.6)',
+                  border: `1px solid ${accentColor}`,
+                  borderRadius: '4px',
+                  padding: '12px',
+                  width: '100%',
+                  boxSizing: 'border-box',
+                  animation: timeLeft <= 5 ? 'crt-flicker 0.2s infinite' : 'none'
+                }}>
+                  <div style={{ fontFamily: 'Press Start 2P', fontSize: '0.5rem', color: 'var(--crt-text-muted)', marginBottom: '6px' }}>
+                    REMATCH TIMER COUNTDOWN
+                  </div>
+                  <div style={{ 
+                    fontFamily: 'Press Start 2P, monospace', 
+                    fontSize: '1.4rem', 
+                    color: timeLeft <= 5 ? 'var(--color-danger)' : accentColor,
+                    textShadow: timeLeft <= 5 ? 'var(--color-danger-glow)' : glowShadow,
+                    fontWeight: 'bold'
+                  }}>
+                    {timeLeft}s SECONDS LEFT
+                  </div>
+                </div>
+
+                {/* Acceptance Buttons */}
+                {!hasAccepted ? (
+                  <button 
+                    onClick={onInitiateRematch} 
+                    className="btn-retro"
+                    style={{ 
+                      borderColor: '#00ff66', 
+                      color: '#00ff66',
+                      fontFamily: 'Press Start 2P, monospace',
+                      fontSize: '0.75rem',
+                      width: '100%',
+                      padding: '12px'
+                    }}
+                  >
+                    [ JOIN REMATCH MATCH ]
+                  </button>
+                ) : (
+                  <div style={{
+                    fontFamily: 'Press Start 2P, monospace',
+                    fontSize: '0.6rem',
+                    color: '#00ff66',
+                    textShadow: '0 0 6px #00ff66',
+                    padding: '8px',
+                    textAlign: 'center',
+                    border: '1px dashed #00ff66',
+                    width: '100%',
+                    boxSizing: 'border-box',
+                    animation: 'pulse 1.5s infinite'
+                  }}>
+                    * READY - WAITING FOR OTHER PLAYERS *
+                  </div>
+                )}
+
+                {/* Participant Checklist */}
+                <div style={{
+                  width: '100%',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '6px',
+                  fontSize: '0.9rem',
+                  fontFamily: 'VT323, monospace',
+                  textAlign: 'left',
+                  background: 'rgba(0,0,0,0.3)',
+                  padding: '8px 12px',
+                  borderRadius: '4px',
+                  border: '1px solid var(--crt-border-muted)'
+                }}>
+                  <div style={{ borderBottom: '1px dashed var(--crt-border-muted)', paddingBottom: '4px', marginBottom: '2px', fontSize: '0.8rem', color: 'var(--crt-text-muted)' }}>
+                    LOBBY DECISIONS:
+                  </div>
+                  {room.players.map(p => {
+                    const ready = room.rematch?.acceptedPlayers.includes(p.id);
+                    return (
+                      <div key={p.id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1.15rem' }}>
+                        <span>{p.name} {p.id === myUserId && '(YOU)'}</span>
+                        {ready ? (
+                          <span style={{ color: '#00ff66', fontWeight: 'bold' }}>[READY]</span>
+                        ) : (
+                          <span style={{ color: 'var(--crt-text-muted)', animation: 'pulse 1s infinite' }}>[DECIDING...]</span>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            <button onClick={onLeaveRoom} className="btn-retro" style={{ width: '100%', marginTop: '4px' }}>
+              Return to Main Menu
+            </button>
           </div>
-          <button onClick={onLeaveRoom} className="btn-retro">
-            Return to Lobby
-          </button>
-        </div>
-      )}
+        );
+      })()}
 
       {/* 5. Match Scoreboard list */}
       <Scoreboard 

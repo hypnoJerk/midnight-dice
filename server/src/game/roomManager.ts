@@ -5,6 +5,7 @@ export class RoomManager {
   private rooms = new Map<string, Room>();
   private userToRoom = new Map<string, string>(); // Maps userId -> roomCode
   private socketToUser = new Map<string, string>(); // Maps socketId -> userId
+  private rematchTimers = new Map<string, NodeJS.Timeout>();
 
   // Callback to run when the game is over and needs to be written to DB
   private onGameOverCallback?: (room: Room) => Promise<void>;
@@ -160,7 +161,7 @@ export class RoomManager {
   /**
    * Removes a player from a room.
    */
-  public leaveRoom(userId: string): string | undefined {
+  public leaveRoom(userId: string, io?: any): string | undefined {
     const code = this.userToRoom.get(userId);
     if (!code) return undefined;
 
@@ -168,6 +169,23 @@ export class RoomManager {
     if (room) {
       room.players = room.players.filter(p => p.id !== userId);
       this.userToRoom.delete(userId);
+
+      // If in rematch phase, clean up player from rematch list
+      if (room.rematch) {
+        room.rematch.acceptedPlayers = room.rematch.acceptedPlayers.filter(id => id !== userId);
+        
+        if (room.players.length === 0) {
+          const timer = this.rematchTimers.get(code);
+          if (timer) {
+            clearTimeout(timer);
+            this.rematchTimers.delete(code);
+          }
+        } else if (room.rematch.acceptedPlayers.length === room.players.length && io) {
+          // If all remaining players have now accepted, execute rematch immediately
+          this.executeRematch(code, io);
+          return code;
+        }
+      }
 
       // If room is now empty, delete it
       if (room.players.length === 0) {
@@ -526,5 +544,147 @@ export class RoomManager {
     }
 
     return room;
+  }
+
+  /**
+   * Initiates or joins an active rematch lobby.
+   */
+  public initiateOrAcceptRematch(roomCode: string, userId: string, io: any): Room {
+    const room = this.rooms.get(roomCode.toUpperCase());
+    if (!room) throw new Error('Room not found');
+    if (room.gameState !== 'GAME_OVER') throw new Error('Game must be over to initiate rematch');
+
+    // Ensure player is actually in the room
+    const isPlayerInRoom = room.players.some(p => p.id === userId);
+    if (!isPlayerInRoom) throw new Error('Player not in this room');
+
+    if (!room.rematch) {
+      // 1. Initiate rematch
+      room.rematch = {
+        timerEndsAt: Date.now() + 30000,
+        acceptedPlayers: [userId]
+      };
+
+      // Set a 30-second timer to execute the rematch
+      const timer = setTimeout(() => {
+        try {
+          this.executeRematch(roomCode, io);
+        } catch (err) {
+          console.error('Error executing rematch on timer:', err);
+        }
+      }, 30000);
+
+      this.rematchTimers.set(roomCode.toUpperCase(), timer);
+    } else {
+      // 2. Join existing rematch
+      if (!room.rematch.acceptedPlayers.includes(userId)) {
+        room.rematch.acceptedPlayers.push(userId);
+      }
+
+      // If all players in the room have accepted, execute rematch immediately
+      if (room.rematch.acceptedPlayers.length === room.players.length) {
+        this.executeRematch(roomCode, io);
+      }
+    }
+
+    return room;
+  }
+
+  /**
+   * Executes the rematch transition.
+   */
+  public executeRematch(roomCode: string, io: any) {
+    const cleanCode = roomCode.toUpperCase();
+    const room = this.rooms.get(cleanCode);
+    if (!room) return;
+
+    // Clear and remove the rematch timer
+    const timer = this.rematchTimers.get(cleanCode);
+    if (timer) {
+      clearTimeout(timer);
+      this.rematchTimers.delete(cleanCode);
+    }
+
+    if (!room.rematch) return;
+
+    const acceptedUserIds = new Set(room.rematch.acceptedPlayers);
+    const originalPlayers = [...room.players];
+
+    // Filter out players who did not accept
+    const kickedPlayers = originalPlayers.filter(p => !acceptedUserIds.has(p.id));
+
+    // Handle left-out players: remove room associations and notify sockets
+    kickedPlayers.forEach(p => {
+      this.userToRoom.delete(p.id);
+      if (p.socketId) {
+        const s = io.sockets.sockets.get(p.socketId);
+        if (s) {
+          s.leave(cleanCode);
+          s.emit('room:kicked', { reason: 'rematch_ignored' });
+        }
+      }
+    });
+
+    // Keep only accepted players
+    room.players = room.players.filter(p => acceptedUserIds.has(p.id));
+
+    if (room.players.length === 0) {
+      // No one accepted (or all left), delete the room
+      this.rooms.delete(cleanCode);
+      return;
+    }
+
+    // Reset remaining players' game-specific properties
+    for (const player of room.players) {
+      player.score = 0;
+      player.isDQ = false;
+      player.hasOne = false;
+      player.hasFour = false;
+      player.diceKept = [];
+      player.diceActive = [];
+      player.rollsCount = 0;
+      player.shootoutScore = undefined;
+      player.roundWins = 0;
+    }
+
+    // Ensure host validity
+    const hostStillPresent = room.players.some(p => p.id === room.hostId);
+    if (!hostStillPresent) {
+      room.players[0].isHost = true;
+      room.hostId = room.players[0].id;
+    } else {
+      // Ensure the designated host has isHost = true set
+      for (const player of room.players) {
+        player.isHost = (player.id === room.hostId);
+      }
+    }
+
+    // Reset room state for new game
+    room.gameState = 'PLAYING';
+    room.activePlayerIndex = 0;
+    room.winners = [];
+    room.currentRound = 1;
+    room.roundTransition = null;
+    room.turnTransition = null;
+    room.rematch = null; // Clear rematch state
+
+    // Broadcast the new sync state to all remaining sockets in the channel
+    const buildSyncPayload = (r: Room) => {
+      return {
+        roomCode: r.code,
+        players: r.players,
+        gameState: r.gameState,
+        activePlayerId: (r.activePlayerIndex >= 0 && r.activePlayerIndex < r.players.length)
+          ? r.players[r.activePlayerIndex].id
+          : null,
+        winners: r.winners,
+        currentRound: r.currentRound || 1,
+        turnTransition: r.turnTransition || null,
+        roundTransition: r.roundTransition || null,
+        rematch: null
+      };
+    };
+
+    io.to(cleanCode).emit('room:sync', buildSyncPayload(room));
   }
 }
