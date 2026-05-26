@@ -255,6 +255,16 @@ h1, h2, h3, h4, h5, h6 {
    Mobile Optimizations & New Visual Systems
    ======================================================== */
 
+.app-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 24px;
+  border-bottom: 2px solid var(--crt-border-muted);
+  background: rgba(0,0,0,0.6);
+  z-index: 10;
+}
+
 .app-main {
   display: flex;
   flex-direction: column;
@@ -268,8 +278,12 @@ h1, h2, h3, h4, h5, h6 {
 
 /* Responsive Edge-to-Edge viewports for mobile gameboards */
 @media (max-width: 600px) {
+  .app-header {
+    padding: 6px 12px !important;
+  }
   .app-main {
-    padding: 12px 0px !important;
+    padding: 4px 0px !important;
+    justify-content: flex-start !important;
   }
   .terminal-panel {
     width: 100% !important;

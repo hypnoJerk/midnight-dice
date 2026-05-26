@@ -92,15 +92,7 @@ function GameAppInner() {
       position: 'relative'
     }}>
       {/* Top Phosphor Toolbar */}
-      <header style={{
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        padding: '12px 24px',
-        borderBottom: '2px solid var(--crt-border-muted)',
-        background: 'rgba(0,0,0,0.6)',
-        zIndex: 10
-      }}>
+      <header className="app-header">
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
           <span style={{ 
             width: '10px', 
@@ -135,15 +127,28 @@ function GameAppInner() {
             onClick={() => { playClick(); setShowSettings(true); }} 
             className="btn-retro" 
             style={{ 
-              padding: '6px 12px', 
-              fontSize: '1.2rem', 
+              padding: '6px 10px', 
+              fontSize: '1rem', 
               display: 'flex', 
               alignItems: 'center', 
               justifyContent: 'center',
               lineHeight: 1
             }}
           >
-            ⚙️
+            <svg 
+              width="1.1em" 
+              height="1.1em" 
+              viewBox="0 0 24 24" 
+              fill="none" 
+              stroke="currentColor" 
+              strokeWidth="2.5" 
+              strokeLinecap="round" 
+              strokeLinejoin="round" 
+              style={{ display: 'inline-block', verticalAlign: 'middle' }}
+            >
+              <circle cx="12" cy="12" r="3" />
+              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+            </svg>
           </button>
         </div>
       </header>
