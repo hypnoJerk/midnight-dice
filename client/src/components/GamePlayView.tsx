@@ -35,7 +35,6 @@ export function GamePlayView({
   const { playClick, playRoll, playSuccess, playDq } = useSound();
   const [selectedIndexes, setSelectedIndexes] = useState<number[]>([]);
   const [isDqBust, setIsDqBust] = useState(false);
-  const [showDqModal, setShowDqModal] = useState(false);
  
   const mePlayer = room.players.find(p => p.id === myUserId);
   const isMeDq = !!mePlayer?.isDQ;
@@ -58,23 +57,16 @@ export function GamePlayView({
       setIsDqBust(true);
       playDq();
       
-      // Trigger temporary violent shake and then show pop-up
-      const modalTimer = setTimeout(() => {
-        setShowDqModal(true);
-      }, 1000);
-
       // Stop shaking after 3 seconds
       const shakeTimer = setTimeout(() => {
         setIsDqBust(false);
       }, 3000);
    
       return () => {
-        clearTimeout(modalTimer);
         clearTimeout(shakeTimer);
       };
     } else {
       setIsDqBust(false);
-      setShowDqModal(false);
     }
   }, [isMeDq]);
 
@@ -326,46 +318,6 @@ export function GamePlayView({
         QUIT MATCH
       </button>
 
-      {/* Disqualification BUST pop-up Modal */}
-      {showDqModal && (
-        <div style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          width: '100%',
-          height: '100%',
-          background: 'rgba(0,0,0,0.9)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 10000,
-          animation: 'crt-flicker 0.15s infinite'
-        }}>
-          <div className="terminal-panel" style={{
-            maxWidth: '340px',
-            textAlign: 'center',
-            borderColor: 'var(--color-danger)',
-            boxShadow: 'var(--color-danger-glow)'
-          }}>
-            <h2 style={{ color: 'var(--color-danger)', fontSize: '2.5rem', marginBottom: '12px' }}>
-              DQ'D!
-            </h2>
-            <div style={{ fontSize: '1.2rem', marginBottom: '20px', color: 'var(--crt-text-secondary)' }}>
-              BUST! Failed to keep both a 1 and a 4 by the end of your turn.
-            </div>
-             <button 
-              onClick={() => {
-                setShowDqModal(false);
-                setIsDqBust(false);
-              }} 
-              className="btn-retro" 
-              style={{ borderColor: 'var(--color-danger)', color: 'var(--color-danger)' }}
-            >
-              ACKNOWLEDGE
-            </button>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
