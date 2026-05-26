@@ -38,6 +38,7 @@ function GameAppInner() {
   const [roomCode, setRoomCode] = useState('');
   const [isRegistering, setIsRegistering] = useState(false);
   const [isSandbox, setIsSandbox] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
 
   const prevRoundTransitionRef = useRef<any>(null);
 
@@ -100,10 +101,10 @@ function GameAppInner() {
         background: 'rgba(0,0,0,0.6)',
         zIndex: 10
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
           <span style={{ 
-            width: '8px', 
-            height: '8px', 
+            width: '10px', 
+            height: '10px', 
             borderRadius: '50%', 
             background: isConnected ? '#00ff66' : 'var(--color-danger)',
             boxShadow: isConnected ? '0 0 6px #00ff66' : '0 0 6px var(--color-danger)',
@@ -111,37 +112,86 @@ function GameAppInner() {
           }} />
           <span style={{ 
             fontFamily: 'Press Start 2P, monospace', 
-            fontSize: '0.45rem',
+            fontSize: '0.85rem',
             color: 'var(--crt-text-secondary)'
           }}>
             {isConnected ? 'ONLINE' : 'OFFLINE'}
           </span>
         </div>
 
-        {/* Phosphor control buttons */}
-        <div style={{ display: 'flex', gap: '8px' }}>
-          <button onClick={() => { playClick(); toggleTheme(); }} className="btn-retro" style={{ padding: '4px 8px', fontSize: '0.75rem' }}>
-            {theme === 'dark' ? 'LIGHT' : 'DARK'}
-          </button>
-          <button onClick={() => { playClick(); togglePreset(); }} className="btn-retro" style={{ padding: '4px 8px', fontSize: '0.75rem' }}>
-            {preset === 'green' ? 'AMBER' : 'GREEN'}
-          </button>
-          <button onClick={() => { playClick(); toggleMute(); }} className="btn-retro" style={{ padding: '4px 8px', fontSize: '0.75rem' }}>
-            {isMuted ? 'UNMUTE' : 'MUTE'}
+        {/* Username & Settings Gear */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+          {displayName && (
+            <span style={{
+              fontFamily: 'Press Start 2P, monospace',
+              fontSize: '0.85rem',
+              color: 'var(--crt-text)',
+              textShadow: 'var(--crt-glow)'
+            }}>
+              {displayName}
+            </span>
+          )}
+          <button 
+            onClick={() => { playClick(); setShowSettings(true); }} 
+            className="btn-retro" 
+            style={{ 
+              padding: '6px 12px', 
+              fontSize: '1.2rem', 
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'center',
+              lineHeight: 1
+            }}
+          >
+            ⚙️
           </button>
         </div>
       </header>
 
+      {/* Settings Dialog Overlay */}
+      {showSettings && (
+        <div className="settings-modal-overlay" onClick={() => setShowSettings(false)}>
+          <div className="settings-modal terminal-panel" onClick={(e) => e.stopPropagation()}>
+            <h2 style={{ fontSize: '1.8rem', marginBottom: '20px', textAlign: 'center', color: 'var(--crt-text)', textShadow: 'var(--crt-glow-strong)' }}>
+              SYSTEM CONFIG
+            </h2>
+            
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px' }}>
+                <span style={{ fontSize: '1.1rem', color: 'var(--crt-text-secondary)' }}>THEME:</span>
+                <button onClick={() => { playClick(); toggleTheme(); }} className="btn-retro" style={{ fontSize: '0.9rem', width: '130px', padding: '8px' }}>
+                  {theme === 'dark' ? 'LIGHT' : 'DARK'}
+                </button>
+              </div>
+              
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px' }}>
+                <span style={{ fontSize: '1.1rem', color: 'var(--crt-text-secondary)' }}>PRESET:</span>
+                <button onClick={() => { playClick(); togglePreset(); }} className="btn-retro" style={{ fontSize: '0.9rem', width: '130px', padding: '8px' }}>
+                  {preset === 'green' ? 'AMBER' : 'GREEN'}
+                </button>
+              </div>
+              
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px' }}>
+                <span style={{ fontSize: '1.1rem', color: 'var(--crt-text-secondary)' }}>AUDIO:</span>
+                <button onClick={() => { playClick(); toggleMute(); }} className="btn-retro" style={{ fontSize: '0.9rem', width: '130px', padding: '8px' }}>
+                  {isMuted ? 'UNMUTE' : 'MUTE'}
+                </button>
+              </div>
+            </div>
+            
+            <button 
+              onClick={() => { playClick(); setShowSettings(false); }} 
+              className="btn-retro" 
+              style={{ marginTop: '28px', width: '100%', borderColor: 'var(--crt-border-muted)', fontSize: '1.05rem' }}
+            >
+              CLOSE
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Main viewport card content */}
-      <main style={{
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        flex: 1,
-        padding: '24px 16px',
-        zIndex: 2
-      }}>
+      <main className="app-main">
         {error && !isSandbox && (
           <div style={{
             background: 'rgba(255, 51, 51, 0.1)',

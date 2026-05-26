@@ -22,7 +22,7 @@ export function Scoreboard({ players, activePlayerId, winners, myUserId }: Score
     }}>
       <div style={{
         fontFamily: 'Press Start 2P, monospace',
-        fontSize: '0.6rem',
+        fontSize: '0.85rem',
         borderBottom: '1px solid var(--crt-border-muted)',
         paddingBottom: '8px',
         color: 'var(--crt-text-secondary)'
@@ -54,7 +54,7 @@ export function Scoreboard({ players, activePlayerId, winners, myUserId }: Score
                 {isActive && (
                   <span style={{ 
                     fontFamily: 'Press Start 2P, monospace',
-                    fontSize: '0.6rem',
+                    fontSize: '0.85rem',
                     color: '#00ff66',
                     animation: 'crt-flicker 0.2s infinite'
                   }}>
@@ -68,7 +68,7 @@ export function Scoreboard({ players, activePlayerId, winners, myUserId }: Score
                   {player.name} {isMe && '(YOU)'}
                 </span>
                 {player.isHost && (
-                  <span style={{ fontSize: '0.7rem', color: 'var(--crt-text-muted)' }}>
+                  <span style={{ fontSize: '0.85rem', color: 'var(--crt-text-muted)' }}>
                     [HOST]
                   </span>
                 )}
@@ -116,7 +116,7 @@ export function Scoreboard({ players, activePlayerId, winners, myUserId }: Score
                 {isWinner && (
                   <span style={{ 
                     fontFamily: 'Press Start 2P, monospace',
-                    fontSize: '0.45rem', 
+                    fontSize: '0.7rem', 
                     background: '#00ff66',
                     color: '#000',
                     padding: '2px 6px',

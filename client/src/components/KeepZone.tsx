@@ -57,7 +57,7 @@ export function KeepZone({ keptDice, hasOne, hasFour, preset }: KeepZoneProps) {
         width: '100%',
         color: 'var(--crt-text-secondary)',
         fontFamily: 'Press Start 2P, monospace',
-        fontSize: '0.55rem',
+        fontSize: '0.85rem',
         letterSpacing: '0.05em',
         alignItems: 'center'
       }}>

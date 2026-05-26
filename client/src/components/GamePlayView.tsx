@@ -79,10 +79,10 @@ export function GamePlayView({
       setIsDqBust(true);
       playDq();
       
-      // Stop shaking after 3 seconds
+      // Stop shaking after 1.5 seconds
       const shakeTimer = setTimeout(() => {
         setIsDqBust(false);
-      }, 3000);
+      }, 1500);
    
       return () => {
         clearTimeout(shakeTimer);
@@ -115,7 +115,7 @@ export function GamePlayView({
   };
 
   return (
-    <div className={`terminal-panel ${isDqBust ? 'dq-shake-active' : ''}`} style={{
+    <div className={`terminal-panel ${isDqBust ? 'dq-shake-active screen-shake-active' : ''}`} style={{
       width: '100%',
       maxWidth: '640px',
       display: 'flex',
@@ -123,27 +123,31 @@ export function GamePlayView({
       gap: '16px',
       transition: 'var(--transition-smooth)'
     }}>
+      {/* Dynamic Red Screen Overlay on Bust DQ */}
+      {isDqBust && <div className="bust-red-overlay" />}
+
       {/* 1. Header status bar */}
       <div style={{
         display: 'flex',
         justifyContent: 'space-between',
         alignItems: 'center',
         borderBottom: '1px solid var(--crt-border-muted)',
-        paddingBottom: '8px',
-        fontSize: '0.85rem'
+        paddingBottom: '10px',
+        fontSize: '1rem'
       }}>
-        <span style={{ color: 'var(--crt-text-secondary)' }}>
-          MODE: {room.gameState}
-        </span>
         <span style={{ 
           color: 'var(--crt-text)', 
           fontFamily: 'Press Start 2P, monospace', 
-          fontSize: '0.6rem',
+          fontSize: '0.85rem',
           textShadow: 'var(--crt-glow)'
         }}>
           ROUND {room.currentRound || 1} / 3
         </span>
-        <span style={{ color: isConnectedColor(room.gameState) }}>
+        <span style={{ 
+          color: isConnectedColor(room.gameState),
+          fontFamily: 'Press Start 2P, monospace',
+          fontSize: '0.85rem'
+        }}>
           ROOM: {room.code}
         </span>
       </div>
@@ -156,11 +160,17 @@ export function GamePlayView({
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
               <div style={{ 
                 fontFamily: 'Press Start 2P, monospace', 
-                fontSize: '0.55rem', 
+                fontSize: '0.85rem', 
                 color: '#00ff66',
-                textAlign: 'center'
+                textAlign: 'center',
+                letterSpacing: '0.05em'
               }}>
                 * YOUR TURN TO ROLL *
+              </div>
+
+              {/* Large Interactive Active Score Readout */}
+              <div className="active-running-score">
+                SCORE: {getRunningScore(activePlayer?.diceKept || [])}
               </div>
               
               <DiceScene 
@@ -204,7 +214,7 @@ export function GamePlayView({
           ) : (
             /* Spectator View (Battery Saver - unmounted canvas) */
             <div style={{
-              height: '180px',
+              height: '200px',
               border: '1px dashed var(--crt-border-muted)',
               borderRadius: '4px',
               display: 'flex',
@@ -212,22 +222,22 @@ export function GamePlayView({
               alignItems: 'center',
               justifyContent: 'center',
               background: 'rgba(0,0,0,0.5)',
-              gap: '8px',
+              gap: '12px',
               padding: '16px'
             }}>
               <span className="crt-flicker-layer" style={{ animationDuration: '2s' }} />
               <div style={{ 
                 fontFamily: 'Press Start 2P, monospace', 
-                fontSize: '0.65rem',
+                fontSize: '0.85rem',
                 color: 'var(--crt-text-muted)'
               }}>
                 [SPECTATING ACTIVE DICE BOARD]
               </div>
-              <div style={{ fontSize: '1rem', color: 'var(--crt-text-secondary)', textAlign: 'center' }}>
+              <div style={{ fontSize: '1.25rem', color: 'var(--crt-text-secondary)', textAlign: 'center' }}>
                 Waiting for {activePlayer?.name || 'player'} to throw...
               </div>
               <div style={{
-                fontSize: '2.5rem',
+                fontSize: '3rem',
                 fontFamily: 'VT323, monospace',
                 color: 'var(--crt-text)',
                 textShadow: 'var(--crt-glow-strong)',
@@ -328,7 +338,7 @@ export function GamePlayView({
             }}>
               MATCH COMPLETE
             </h2>
-            <div style={{ fontSize: '1.2rem', textAlign: 'center', fontFamily: 'VT323, monospace', fontSize: '1.6rem' }}>
+            <div style={{ textAlign: 'center', fontFamily: 'VT323, monospace', fontSize: '1.6rem' }}>
               Winner(s):{' '}
               <span style={{ color: accentColor, fontWeight: 'bold', textShadow: glowShadow }}>
                 {room.winners.map(id => room.players.find(p => p.id === id)?.name).join(', ')}

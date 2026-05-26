@@ -70,14 +70,20 @@ export function Die3D({ index, value, onTap, onSettle, preset, diceScale, isSele
   const startY = 4.0 + (Math.random() * 1.5);
   const startZ = -1.5 + (Math.random() * 2);
 
+  // Randomized starting orientation to prevent uniform initial drops
+  const startRotX = Math.random() * Math.PI * 2;
+  const startRotY = Math.random() * Math.PI * 2;
+  const startRotZ = Math.random() * Math.PI * 2;
+
   const [ref, api] = useBox(() => ({
     mass: 1.5,
     position: [startX, startY, startZ],
+    rotation: [startRotX, startRotY, startRotZ],
     velocity: [0, -0.2, 0],
     angularVelocity: [
-      (Math.random() - 0.5) * 2,
-      (Math.random() - 0.5) * 2,
-      (Math.random() - 0.5) * 2
+      (Math.random() - 0.5) * 6,
+      (Math.random() - 0.5) * 6,
+      (Math.random() - 0.5) * 6
     ],
     args: [scale, scale, scale],
     allowSleep: true,

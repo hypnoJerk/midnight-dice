@@ -250,3 +250,103 @@ h1, h2, h3, h4, h5, h6 {
   0% { transform: translate3d(100%, 0, 0); }
   100% { transform: translate3d(-100%, 0, 0); }
 }
+
+/* ========================================================
+   Mobile Optimizations & New Visual Systems
+   ======================================================== */
+
+.app-main {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  padding: 24px 16px;
+  z-index: 2;
+  width: 100%;
+}
+
+/* Responsive Edge-to-Edge viewports for mobile gameboards */
+@media (max-width: 600px) {
+  .app-main {
+    padding: 12px 0px !important;
+  }
+  .terminal-panel {
+    width: 100% !important;
+    max-width: 100% !important;
+    border-radius: 0 !important;
+    padding: 0 !important;
+  }
+}
+
+/* Centralized Retro Settings Modal Popup */
+.settings-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.75);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(4px);
+  animation: crt-flicker 0.15s infinite;
+}
+
+.settings-modal {
+  width: 90%;
+  max-width: 340px;
+  border-radius: 8px !important;
+  box-shadow: 0 0 25px var(--crt-border), inset 0 0 15px rgba(0, 0, 0, 0.9) !important;
+  border: 2px solid var(--crt-border) !important;
+  background: var(--crt-bg-panel) !important;
+}
+
+/* Large Running Score Display */
+.active-running-score {
+  font-size: 3rem;
+  font-family: var(--font-pixel);
+  color: var(--crt-text);
+  text-shadow: var(--crt-glow-strong);
+  text-align: center;
+  margin: 8px 0;
+  letter-spacing: 0.05em;
+  font-weight: bold;
+}
+
+/* Fullscreen Red Vignette Overlay on BUST */
+.bust-red-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(255, 0, 0, 0.22);
+  box-shadow: inset 0 0 120px rgba(255, 0, 0, 0.85);
+  pointer-events: none;
+  z-index: 99999;
+  animation: crt-flicker 0.1s infinite;
+  transition: opacity 0.3s ease;
+}
+
+/* Violent screen shake animation */
+@keyframes violent-shake {
+  0% { transform: translate(2px, 1px) rotate(0deg); }
+  10% { transform: translate(-2px, -3px) rotate(-1.5deg); }
+  20% { transform: translate(-4px, 0px) rotate(1.5deg); }
+  30% { transform: translate(0px, 3px) rotate(0deg); }
+  40% { transform: translate(2px, -2px) rotate(1.5deg); }
+  50% { transform: translate(-2px, 3px) rotate(-1.5deg); }
+  60% { transform: translate(-4px, 2px) rotate(0deg); }
+  70% { transform: translate(3px, 2px) rotate(-1.5deg); }
+  80% { transform: translate(-2px, -2px) rotate(1.5deg); }
+  90% { transform: translate(3px, 3px) rotate(0deg); }
+  100% { transform: translate(2px, -3px) rotate(-1.5deg); }
+}
+
+.screen-shake-active {
+  animation: violent-shake 0.12s ease-in-out infinite;
+}
+

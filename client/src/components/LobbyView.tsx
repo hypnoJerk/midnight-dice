@@ -23,7 +23,7 @@ export function LobbyView({ room, myUserId, onStartGame, onLeaveRoom }: LobbyVie
       <div style={{ textAlign: 'center' }}>
         <div style={{ 
           fontFamily: 'Press Start 2P, monospace', 
-          fontSize: '0.65rem',
+          fontSize: '0.85rem',
           color: 'var(--crt-text-secondary)',
           marginBottom: '8px'
         }}>
@@ -42,7 +42,7 @@ export function LobbyView({ room, myUserId, onStartGame, onLeaveRoom }: LobbyVie
       <div>
         <div style={{ 
           fontFamily: 'Press Start 2P, monospace', 
-          fontSize: '0.55rem', 
+          fontSize: '0.85rem', 
           color: 'var(--crt-text-secondary)',
           marginBottom: '12px'
         }}>
