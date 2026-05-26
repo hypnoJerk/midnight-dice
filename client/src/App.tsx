@@ -7,6 +7,7 @@ import LobbyView from './components/LobbyView.js';
 import GamePlayView from './components/GamePlayView.js';
 import CRTOverlay from './components/CRTOverlay.js';
 import SandboxDebugView from './components/SandboxDebugView.js';
+import LeaderboardView from './components/LeaderboardView.js';
 
 function GameAppInner() {
   const { theme, preset, toggleTheme, togglePreset } = useTheme();
@@ -38,6 +39,7 @@ function GameAppInner() {
   const [roomCode, setRoomCode] = useState('');
   const [isRegistering, setIsRegistering] = useState(false);
   const [isSandbox, setIsSandbox] = useState(false);
+  const [showLeaderboard, setShowLeaderboard] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
 
   const prevRoundTransitionRef = useRef<any>(null);
@@ -217,6 +219,8 @@ function GameAppInner() {
         {/* 1. Sandbox Playground View */}
         {isSandbox ? (
           <SandboxDebugView preset={preset} onBack={() => setIsSandbox(false)} />
+        ) : showLeaderboard ? (
+          <LeaderboardView onClose={() => setShowLeaderboard(false)} preset={preset} myUserId={userId} />
         ) : (
           <>
             {/* 2. Registration lobby view */}
@@ -334,6 +338,21 @@ function GameAppInner() {
                     }}
                   >
                     BOOT SANDBOX PLAYGROUND
+                  </button>
+
+                  <button
+                    onClick={() => { playClick(); setShowLeaderboard(true); }}
+                    className="btn-retro"
+                    style={{
+                      borderColor: 'var(--crt-text-secondary)',
+                      color: 'var(--crt-text-secondary)',
+                      fontFamily: 'Press Start 2P, monospace',
+                      fontSize: '0.55rem',
+                      padding: '12px',
+                      marginTop: '8px'
+                    }}
+                  >
+                    ACCESS GLOBAL LEADERBOARD
                   </button>
                 </div>
               </div>
