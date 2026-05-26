@@ -20,6 +20,33 @@ interface GamePlayViewProps {
   preset: 'green' | 'amber';
 }
 
+export function RetroDie2D({ value, size = 28, color = 'currentColor' }: { value: number; size?: number; color?: string }) {
+  const pips: Record<number, [number, number][]> = {
+    1: [[50, 50]],
+    2: [[25, 25], [75, 75]],
+    3: [[25, 25], [50, 50], [75, 75]],
+    4: [[25, 25], [25, 75], [75, 25], [75, 75]],
+    5: [[25, 25], [25, 75], [50, 50], [75, 25], [75, 75]],
+    6: [[25, 25], [25, 50], [25, 75], [75, 25], [75, 50], [75, 75]]
+  };
+
+  const activePips = pips[value] || [];
+
+  return (
+    <svg width={size} height={size} viewBox="0 0 100 100" style={{ display: 'block' }}>
+      {activePips.map(([cx, cy], idx) => (
+        <circle 
+          key={idx} 
+          cx={cx} 
+          cy={cy} 
+          r="9" 
+          fill={color} 
+        />
+      ))}
+    </svg>
+  );
+}
+
 export function GamePlayView({
   room,
   myUserId,
@@ -294,15 +321,22 @@ export function GamePlayView({
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
-                            fontSize: '1.6rem',
-                            fontWeight: 'bold',
-                            fontFamily: 'VT323, monospace',
                             color: 'var(--crt-text)',
                             transition: 'var(--transition-smooth)',
                             animation: !val ? 'pulse 1.5s infinite' : 'none'
                           }}
                         >
-                          {val || '?'}
+                          {val ? (
+                            <RetroDie2D value={val} size={28} />
+                          ) : (
+                            <span style={{ 
+                              fontSize: '1.6rem', 
+                              fontWeight: 'bold', 
+                              fontFamily: 'VT323, monospace' 
+                            }}>
+                              ?
+                            </span>
+                          )}
                         </div>
                       );
                     })}
