@@ -291,7 +291,7 @@ export function LeaderboardView({ onClose, myUserId, preset = 'green' }: Leaderb
                   border: '1px dashed var(--crt-border-muted)',
                   color: 'var(--crt-text-muted)'
                 }}>
-                  NO ACTIVE AGENT IDENTITIES INDEXED
+                  NO ACTIVE PLAYER IDENTITIES INDEXED
                 </div>
               ) : (
                 <table style={{
@@ -308,7 +308,7 @@ export function LeaderboardView({ onClose, myUserId, preset = 'green' }: Leaderb
                       fontSize: '1rem'
                     }}>
                       <th style={{ padding: '8px 12px' }}>RANK</th>
-                      <th style={{ padding: '8px 12px' }}>AGENT DISPLAY_NAME</th>
+                      <th style={{ padding: '8px 12px' }}>PLAYER DISPLAY_NAME</th>
                       <th style={{ padding: '8px 12px', textAlign: 'center' }}>WINS</th>
                       <th style={{ padding: '8px 12px', textAlign: 'center' }}>PLAYED</th>
                       <th style={{ padding: '8px 12px', textAlign: 'center' }}>WIN_RATE</th>
@@ -425,7 +425,7 @@ export function LeaderboardView({ onClose, myUserId, preset = 'green' }: Leaderb
                 fontSize: '0.65rem',
                 color: 'var(--crt-text-secondary)'
               }}>
-                [ MY AGENT PROFILE STATISTICS ]
+                [ MY PLAYER PROFILE STATISTICS ]
               </div>
               <div style={{
                 display: 'flex',
@@ -436,7 +436,7 @@ export function LeaderboardView({ onClose, myUserId, preset = 'green' }: Leaderb
                 color: 'var(--crt-text)'
               }}>
                 <div>
-                  AGENT DISPLAY: <span style={{ textShadow: 'var(--crt-glow)' }}>{currentUserStats.displayName}</span>
+                  PLAYER DISPLAY: <span style={{ textShadow: 'var(--crt-glow)' }}>{currentUserStats.displayName}</span>
                 </div>
                 <div style={{ display: 'flex', gap: '20px' }}>
                   <span>WINS: {currentUserStats.totalWins}</span>

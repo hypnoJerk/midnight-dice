@@ -308,7 +308,7 @@ function GameAppInner() {
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                   <label style={{ fontSize: '0.8rem', color: 'var(--crt-text-secondary)' }}>
-                    AGENT CODENAME:
+                    PLAYER CODENAME:
                   </label>
                   <input
                     type="text"
@@ -501,19 +501,21 @@ function GameAppInner() {
 
                   <hr style={{ border: '0', borderTop: '1px dashed var(--crt-border-muted)', margin: '4px 0' }} />
                   
-                  <button
-                    onClick={() => { playClick(); setIsSandbox(true); }}
-                    className="btn-retro"
-                    style={{
-                      borderColor: 'var(--crt-text-secondary)',
-                      color: 'var(--crt-text-secondary)',
-                      fontFamily: 'Press Start 2P, monospace',
-                      fontSize: '0.55rem',
-                      padding: '12px'
-                    }}
-                  >
-                    BOOT SANDBOX PLAYGROUND
-                  </button>
+                  {displayName && displayName.toUpperCase() === 'HYPNO' && (
+                    <button
+                      onClick={() => { playClick(); setIsSandbox(true); }}
+                      className="btn-retro"
+                      style={{
+                        borderColor: 'var(--crt-text-secondary)',
+                        color: 'var(--crt-text-secondary)',
+                        fontFamily: 'Press Start 2P, monospace',
+                        fontSize: '0.55rem',
+                        padding: '12px'
+                      }}
+                    >
+                      BOOT SANDBOX PLAYGROUND
+                    </button>
+                  )}
 
                   <button
                     onClick={() => { playClick(); setShowLeaderboard(true); }}
