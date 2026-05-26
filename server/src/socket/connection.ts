@@ -11,7 +11,8 @@ export function buildSyncPayload(room: Room) {
     players: room.players,
     gameState: room.gameState,
     activePlayerId: room.activePlayerIndex >= 0 ? room.players[room.activePlayerIndex].id : null,
-    winners: room.winners
+    winners: room.winners,
+    turnTransition: room.turnTransition || null
   };
 }
 
@@ -144,6 +145,19 @@ export function initializeSockets(io: Server, roomManager: RoomManager) {
         socket.emit('roll:result', { dice });
         // Broadcast updated room state (with diceActive populated) to all
         io.to(roomCode.toUpperCase()).emit('room:sync', buildSyncPayload(room));
+
+        if (room.turnTransition) {
+          setTimeout(() => {
+            try {
+              const updatedRoom = roomManager.completeTurnTransition(roomCode);
+              if (updatedRoom) {
+                io.to(roomCode.toUpperCase()).emit('room:sync', buildSyncPayload(updatedRoom));
+              }
+            } catch (e) {
+              console.error('Error advancing transition:', e);
+            }
+          }, 3000);
+        }
       } catch (err: any) {
         socket.emit('error', err.message || 'Failed to submit roll results');
       }
@@ -154,6 +168,19 @@ export function initializeSockets(io: Server, roomManager: RoomManager) {
       try {
         const room = roomManager.keepActivePlayer(roomCode, userId, diceIndexes);
         io.to(roomCode.toUpperCase()).emit('room:sync', buildSyncPayload(room));
+
+        if (room.turnTransition) {
+          setTimeout(() => {
+            try {
+              const updatedRoom = roomManager.completeTurnTransition(roomCode);
+              if (updatedRoom) {
+                io.to(roomCode.toUpperCase()).emit('room:sync', buildSyncPayload(updatedRoom));
+              }
+            } catch (e) {
+              console.error('Error advancing transition:', e);
+            }
+          }, 3000);
+        }
       } catch (err: any) {
         socket.emit('error', err.message || 'Failed to keep dice');
       }

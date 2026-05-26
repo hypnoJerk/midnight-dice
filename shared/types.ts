@@ -24,6 +24,12 @@ export interface Room {
   players: Player[];
   activePlayerIndex: number; // Index of the player currently rolling
   winners: string[];         // ID(s) of winner(s) at the end of the round or shootout
+  turnTransition?: {
+    playerName: string;
+    score: number;
+    isDQ: boolean;
+    isShootout?: boolean;
+  } | null;
 }
 
 // WebSocket Event Payloads
@@ -44,6 +50,12 @@ export interface RoomSyncPayload {
   gameState: GameState;
   activePlayerId: string | null;
   winners: string[];
+  turnTransition?: {
+    playerName: string;
+    score: number;
+    isDQ: boolean;
+    isShootout?: boolean;
+  } | null;
 }
 
 export interface GameStartPayload {

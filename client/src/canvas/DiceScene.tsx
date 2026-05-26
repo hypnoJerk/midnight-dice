@@ -77,8 +77,8 @@ function CameraController({
       positions.forEach(p => centroid.add(p));
       centroid.divideScalar(positions.length);
 
-      // Target lookAt point focuses on the centroid
-      targetLookAt.set(centroid.x, 1.0, centroid.z);
+      // Target lookAt point focuses on the centroid at floor level
+      targetLookAt.set(centroid.x, 0.0, centroid.z);
 
       // 2. Compute Spread (maximum bounding size)
       let minX = Infinity, maxX = -Infinity;
@@ -95,22 +95,22 @@ function CameraController({
       const spread = Math.max(dx, dz);
 
       // 3. Dynamic heights and depths
-      // For clustered dice (spread < 2.0), use base height. For spread out dice, scale up.
-      const spreadOffset = Math.max(0, spread - 2.0);
-      const heightPadding = spreadOffset * 0.75;
+      // For clustered dice (spread < 3.0), use base seating height. For spread out dice, scale up.
+      const spreadOffset = Math.max(0, spread - 3.0);
+      const heightPadding = spreadOffset * 0.95; // increased from 0.75 for absolute frustum safety
       
       const dynamicY = y + heightPadding;
-      const dynamicZ = z + (heightPadding * 0.18); // keep high-angle tilt proportional
+      const dynamicZ = z + heightPadding; // 1:1 seating depth zoom ratio
       
-      // Keep camera centered horizontally on centroid with a damping coefficient
-      const dynamicX = centroid.x * 0.5;
+      // Center camera X on centroid with a gentle horizontal damping
+      const dynamicX = centroid.x * 0.45;
 
       targetCamPos.set(dynamicX, dynamicY, dynamicZ);
     }
 
-    // Buttery smooth lerp tracking (0.04 factor creates premium cinematic panning)
-    currentPosition.current.lerp(targetCamPos, 0.04);
-    currentTarget.current.lerp(targetLookAt, 0.04);
+    // Cinematic tracking catch-up (0.02 lerp lets camera drift elegantly behind the roll)
+    currentPosition.current.lerp(targetCamPos, 0.02);
+    currentTarget.current.lerp(targetLookAt, 0.02);
 
     camera.position.copy(currentPosition.current);
     camera.lookAt(currentTarget.current);
@@ -170,12 +170,12 @@ export function DiceScene({
   const restitutionValue = debugConfig ? debugConfig.restitution : 0.45;
   
   const camX = debugConfig ? debugConfig.camX : 0.0;
-  const camY = debugConfig ? debugConfig.camY : 11.5;
-  const camZ = debugConfig ? debugConfig.camZ : 2.0;
-  const fov = debugConfig ? debugConfig.fov : 38;
+  const camY = debugConfig ? debugConfig.camY : 8.2;
+  const camZ = debugConfig ? debugConfig.camZ : 5.0;
+  const fov = debugConfig ? debugConfig.fov : 40;
 
   const targetX = debugConfig ? debugConfig.targetX : 0.0;
-  const targetY = debugConfig ? debugConfig.targetY : 0.5;
+  const targetY = debugConfig ? debugConfig.targetY : 0.0;
   const targetZ = debugConfig ? debugConfig.targetZ : 0.0;
 
   const ambientIntensity = debugConfig ? debugConfig.ambientIntensity : 2.30;

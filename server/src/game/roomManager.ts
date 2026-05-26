@@ -276,9 +276,13 @@ export class RoomManager {
 
       activePlayer.shootoutScore = calculateShootoutScore(diceValues);
 
-      // In a shootout, a player rolls all 6 dice exactly once, 
-      // which immediately concludes their shootout turn.
-      this.advanceShootoutTurn(room);
+      // Defer shootout turn advancement to show transition screen
+      room.turnTransition = {
+        playerName: activePlayer.name,
+        score: activePlayer.shootoutScore,
+        isDQ: false,
+        isShootout: true
+      };
 
       return room;
     } else {
@@ -332,10 +336,34 @@ export class RoomManager {
       activePlayer.score = scoringResult.score;
       activePlayer.isDQ = scoringResult.isDQ;
 
-      // Advance turn to the next player
-      this.advanceStandardTurn(room);
+      // Defer turn advancement to show transition screen
+      room.turnTransition = {
+        playerName: activePlayer.name,
+        score: activePlayer.score,
+        isDQ: activePlayer.isDQ
+      };
     }
 
+    return room;
+  }
+
+  /**
+   * Completes the turn transition, advances the turn, and clears the transition state.
+   */
+  public completeTurnTransition(roomCode: string): Room | undefined {
+    const room = this.rooms.get(roomCode.toUpperCase());
+    if (!room) return undefined;
+    
+    // Only advance if a transition is actually active
+    if (room.turnTransition) {
+      const isShootout = room.turnTransition.isShootout;
+      room.turnTransition = null;
+      if (isShootout) {
+        this.advanceShootoutTurn(room);
+      } else {
+        this.advanceStandardTurn(room);
+      }
+    }
     return room;
   }
 

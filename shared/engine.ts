@@ -61,6 +61,27 @@ export function calculateScore(keptDice: number[]): {
 }
 
 /**
+ * Calculates the current running score based on kept dice.
+ * It removes up to one 1 and one 4 (if they exist) as qualification dice,
+ * and sums the rest.
+ */
+export function getRunningScore(keptDice: number[]): number {
+  const diceCopy = [...keptDice];
+  
+  const indexOne = diceCopy.indexOf(1);
+  if (indexOne !== -1) {
+    diceCopy.splice(indexOne, 1);
+  }
+  
+  const indexFour = diceCopy.indexOf(4);
+  if (indexFour !== -1) {
+    diceCopy.splice(indexFour, 1);
+  }
+  
+  return diceCopy.reduce((sum, val) => sum + val, 0);
+}
+
+/**
  * Computes shootout score.
  */
 export function calculateShootoutScore(dice: number[]): number {

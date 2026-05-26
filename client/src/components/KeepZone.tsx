@@ -1,12 +1,18 @@
 import React from 'react';
+import { getRunningScore } from 'shared/types.js';
 
 interface KeepZoneProps {
   keptDice: number[];
   hasOne: boolean;
   hasFour: boolean;
+  preset?: 'green' | 'amber';
 }
 
-export function KeepZone({ keptDice, hasOne, hasFour }: KeepZoneProps) {
+export function KeepZone({ keptDice, hasOne, hasFour, preset }: KeepZoneProps) {
+  const isAmber = preset === 'amber';
+  const qHighlightColor = isAmber ? '#00ff66' : '#ffb000'; // Green when amber, Amber when green
+  const qHighlightGlow = isAmber ? '0 0 10px rgba(0, 255, 102, 0.4)' : '0 0 10px rgba(255, 176, 0, 0.4)';
+
   // Authoritative visual sorting: Snap only one 1 and one 4 to the far-left
   const keptCopy = [...keptDice];
   
@@ -52,10 +58,11 @@ export function KeepZone({ keptDice, hasOne, hasFour }: KeepZoneProps) {
         color: 'var(--crt-text-secondary)',
         fontFamily: 'Press Start 2P, monospace',
         fontSize: '0.55rem',
-        letterSpacing: '0.05em'
+        letterSpacing: '0.05em',
+        alignItems: 'center'
       }}>
-        <span>[KEEP ZONE]</span>
-        <span style={{ color: (hasOne && hasFour) ? '#00ff66' : 'var(--color-danger)' }}>
+        <span>[KEEP ZONE] (SCORE: {getRunningScore(keptDice)})</span>
+        <span style={{ color: (hasOne && hasFour) ? qHighlightColor : 'var(--color-danger)' }}>
           {(hasOne && hasFour) ? '* QUALIFIED *' : '* UNQUALIFIED *'}
         </span>
       </div>
@@ -77,9 +84,9 @@ export function KeepZone({ keptDice, hasOne, hasFour }: KeepZoneProps) {
               style={{
                 width: '50px',
                 height: '50px',
-                border: `2px solid ${val ? (isHighlighted ? '#00ff66' : 'var(--crt-border)') : 'var(--crt-border-muted)'}`,
+                border: `2px solid ${val ? (isHighlighted ? qHighlightColor : 'var(--crt-border)') : 'var(--crt-border-muted)'}`,
                 background: val ? 'rgba(0, 255, 102, 0.05)' : 'rgba(0,0,0,0.8)',
-                boxShadow: val ? (isHighlighted ? '0 0 10px rgba(0, 255, 102, 0.4)' : 'var(--crt-glow)') : 'none',
+                boxShadow: val ? (isHighlighted ? qHighlightGlow : 'var(--crt-glow)') : 'none',
                 borderRadius: '4px',
                 display: 'flex',
                 alignItems: 'center',
@@ -87,7 +94,7 @@ export function KeepZone({ keptDice, hasOne, hasFour }: KeepZoneProps) {
                 fontSize: '1.8rem',
                 fontWeight: 'bold',
                 fontFamily: 'VT323, monospace',
-                color: isHighlighted ? '#00ff66' : 'var(--crt-text)',
+                color: isHighlighted ? qHighlightColor : 'var(--crt-text)',
                 transition: 'var(--transition-smooth)',
                 position: 'relative'
               }}
@@ -103,8 +110,8 @@ export function KeepZone({ keptDice, hasOne, hasFour }: KeepZoneProps) {
                   width: '4px',
                   height: '4px',
                   borderRadius: '50%',
-                  background: '#00ff66',
-                  boxShadow: '0 0 6px #00ff66'
+                  background: qHighlightColor,
+                  boxShadow: `0 0 6px ${qHighlightColor}`
                 }} />
               )}
             </div>
