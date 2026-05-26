@@ -214,7 +214,7 @@ export function GamePlayView({
           ) : (
             /* Spectator View (Battery Saver - unmounted canvas) */
             <div style={{
-              height: '200px',
+              minHeight: '260px',
               border: '1px dashed var(--crt-border-muted)',
               borderRadius: '4px',
               display: 'flex',
@@ -223,7 +223,8 @@ export function GamePlayView({
               justifyContent: 'center',
               background: 'rgba(0,0,0,0.5)',
               gap: '12px',
-              padding: '16px'
+              padding: '16px',
+              position: 'relative'
             }}>
               <span className="crt-flicker-layer" style={{ animationDuration: '2s' }} />
               <div style={{ 
@@ -241,10 +242,73 @@ export function GamePlayView({
                 fontFamily: 'VT323, monospace',
                 color: 'var(--crt-text)',
                 textShadow: 'var(--crt-glow-strong)',
-                marginTop: '4px'
+                marginTop: '4px',
+                marginBottom: '4px'
               }}>
                 CURRENT SCORE: {getRunningScore(activePlayer?.diceKept || [])}
               </div>
+
+              {/* Display Row of Thrown Dice (Current Hand) */}
+              {activePlayer && (
+                <div style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  gap: '8px',
+                  width: '100%',
+                  borderTop: '1px dashed var(--crt-border-muted)',
+                  paddingTop: '12px',
+                  marginTop: '4px'
+                }}>
+                  <div style={{
+                    fontFamily: 'Press Start 2P, monospace',
+                    fontSize: '0.6rem',
+                    color: 'var(--crt-text-secondary)',
+                    letterSpacing: '0.05em'
+                  }}>
+                    {(activePlayer.diceActive && activePlayer.diceActive.length > 0) ? '* THROWN HAND *' : '* SHAKING DICE... *'}
+                  </div>
+
+                  <div style={{
+                    display: 'flex',
+                    gap: '10px',
+                    justifyContent: 'center',
+                    width: '100%',
+                    maxWidth: '380px'
+                  }}>
+                    {Array.from({ length: 6 - activePlayer.diceKept.length }).map((_, idx) => {
+                      const val = activePlayer.diceActive?.[idx];
+                      const diceBorder = val ? 'var(--crt-border)' : 'var(--crt-border-muted)';
+                      const diceGlow = val ? 'var(--crt-glow)' : 'none';
+
+                      return (
+                        <div 
+                          key={idx} 
+                          style={{
+                            width: '45px',
+                            height: '45px',
+                            border: `2px solid ${diceBorder}`,
+                            background: val ? 'rgba(0, 255, 102, 0.05)' : 'rgba(0, 0, 0, 0.6)',
+                            boxShadow: diceGlow,
+                            borderRadius: '4px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            fontSize: '1.6rem',
+                            fontWeight: 'bold',
+                            fontFamily: 'VT323, monospace',
+                            color: 'var(--crt-text)',
+                            transition: 'var(--transition-smooth)',
+                            animation: !val ? 'pulse 1.5s infinite' : 'none'
+                          }}
+                        >
+                          {val || '?'}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
             </div>
           )}
 

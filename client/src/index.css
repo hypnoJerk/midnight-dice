@@ -364,3 +364,11 @@ h1, h2, h3, h4, h5, h6 {
   animation: violent-shake 0.12s ease-in-out infinite;
 }
 
+/* Pulsing neon/phosphor glow animation */
+@keyframes pulse {
+  0% { opacity: 0.35; }
+  50% { opacity: 0.85; }
+  100% { opacity: 0.35; }
+}
+
+
