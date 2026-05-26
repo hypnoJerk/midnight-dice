@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { calculateScore, calculateShootoutScore, resolveWinners } from '../src/game/engine.js';
 import { Player } from 'shared/types.js';
+import { RoomManager } from '../src/game/roomManager.js';
 
 describe('Game Engine Scoring & Qualification Rules', () => {
   describe('calculateScore', () => {
@@ -75,6 +76,7 @@ describe('Game Engine Scoring & Qualification Rules', () => {
       diceKept: [],
       diceActive: [],
       rollsCount: 0,
+      roundWins: 0,
       ...fields
     });
 
@@ -124,6 +126,62 @@ describe('Game Engine Scoring & Qualification Rules', () => {
       const result = resolveWinners([p1, p2], true);
       expect(result.winnerIds).toEqual(['1', '2']);
       expect(result.requiresShootout).toBe(true);
+    });
+  });
+
+  describe('RoomManager Best of 3 Rounds Progression', () => {
+    it('should correctly transition through multiple rounds and declare match winner on 2 wins', () => {
+      const manager = new RoomManager();
+
+      // Host creates a room
+      const room = manager.createRoom('user-host', 'Alice');
+      expect(room.currentRound).toBe(1);
+      expect(room.players[0].roundWins).toBe(0);
+
+      // Start the match
+      manager.startGame(room.code, 'user-host');
+      expect(room.gameState).toBe('PLAYING');
+
+      // Simulate turn completion for Alice
+      room.players[0].score = 20;
+      room.players[0].diceKept = [1, 4, 6, 3, 3, 3];
+      room.players[0].isDQ = false;
+
+      room.turnTransition = {
+        playerName: 'Alice',
+        score: 20,
+        isDQ: false
+      };
+
+      // Complete transition -> should trigger round transition since it's 1-player and she won!
+      manager.completeTurnTransition(room.code);
+      expect(room.players[0].roundWins).toBe(1);
+      expect(room.gameState).toBe('PLAYING'); // Still playing overall match
+      expect(room.roundTransition).toBeDefined();
+      expect(room.roundTransition?.roundNumber).toBe(1);
+
+      // Now complete the round transition to round 2
+      manager.completeRoundTransition(room.code);
+      expect(room.currentRound).toBe(2);
+      expect(room.roundTransition).toBeNull();
+      expect(room.players[0].score).toBe(0); // Reset for new round
+      expect(room.players[0].roundWins).toBe(1); // Keeps round-win count!
+
+      // Simulate Alice winning round 2
+      room.players[0].score = 24;
+      room.players[0].diceKept = [1, 4, 6, 6, 6, 6];
+      room.players[0].isDQ = false;
+      room.turnTransition = {
+        playerName: 'Alice',
+        score: 24,
+        isDQ: false
+      };
+
+      // Complete transition -> should trigger GAME_OVER since Alice reaches 2 round-wins!
+      manager.completeTurnTransition(room.code);
+      expect(room.players[0].roundWins).toBe(2);
+      expect(room.gameState).toBe('GAME_OVER');
+      expect(room.winners).toEqual(['user-host']);
     });
   });
 });

@@ -53,7 +53,9 @@ export function useGame() {
         players: payload.players,
         activePlayerIndex: payload.players.findIndex(p => p.id === payload.activePlayerId),
         winners: payload.winners,
-        turnTransition: payload.turnTransition
+        currentRound: payload.currentRound,
+        turnTransition: payload.turnTransition,
+        roundTransition: payload.roundTransition
       });
 
       // Synchronize activeRoll local state with the server's authoritative state

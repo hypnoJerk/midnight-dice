@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { ThemeProvider, useTheme } from './context/ThemeContext.js';
 import { AudioProvider, useAudio } from './context/AudioContext.js';
 import { useGame } from './hooks/useGame.js';
@@ -11,7 +11,7 @@ import SandboxDebugView from './components/SandboxDebugView.js';
 function GameAppInner() {
   const { theme, preset, toggleTheme, togglePreset } = useTheme();
   const { isMuted, toggleMute } = useAudio();
-  const { playClick } = useSound();
+  const { playClick, playSuccess } = useSound();
   
   const {
     room,
@@ -37,6 +37,16 @@ function GameAppInner() {
   const [roomCode, setRoomCode] = useState('');
   const [isRegistering, setIsRegistering] = useState(false);
   const [isSandbox, setIsSandbox] = useState(false);
+
+  const prevRoundTransitionRef = useRef<any>(null);
+
+  // Trigger procedural 8-bit victory success chime when round transition starts
+  useEffect(() => {
+    if (room?.roundTransition && !prevRoundTransitionRef.current) {
+      playSuccess();
+    }
+    prevRoundTransitionRef.current = room?.roundTransition;
+  }, [room?.roundTransition, playSuccess]);
 
   const saveDisplayName = (name: string) => {
     setDisplayName(name);
@@ -374,7 +384,7 @@ function GameAppInner() {
                   fontFamily: 'VT323, monospace',
                   textShadow: 'var(--color-danger-glow)'
                 }}>
-                  BUSTED!
+                  DQ'D!
                 </span>
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
@@ -403,6 +413,115 @@ function GameAppInner() {
               fontFamily: 'Press Start 2P, monospace',
             }}>
               PREPARING NEXT TRANSFERS...
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Global Round Transition Screen Override */}
+      {room && room.roundTransition && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          width: '100vw',
+          height: '100vh',
+          background: 'var(--crt-bg)',
+          opacity: 0.98,
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 99999,
+          padding: '24px',
+          animation: 'crt-flicker 0.15s infinite',
+          boxSizing: 'border-box'
+        }}>
+          <span className="crt-flicker-layer" style={{ animationDuration: '0.15s' }} />
+          
+          <div style={{
+            border: '2px solid var(--crt-border)',
+            boxShadow: 'var(--crt-glow-strong)',
+            background: 'var(--crt-bg-panel)',
+            padding: '40px',
+            borderRadius: '8px',
+            textAlign: 'center',
+            maxWidth: '500px',
+            width: '100%',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '24px',
+            position: 'relative'
+          }}>
+            <div style={{
+              fontFamily: 'Press Start 2P, monospace',
+              fontSize: '0.75rem',
+              color: 'var(--crt-text-secondary)',
+              letterSpacing: '0.15em'
+            }}>
+              [ ROUND COMPLETED ]
+            </div>
+            
+            <h2 style={{
+              fontSize: '2.5rem',
+              color: 'var(--crt-text)',
+              fontFamily: 'VT323, monospace',
+              margin: 0
+            }}>
+              ROUND {room.roundTransition.roundNumber}<br/>VICTOR!
+            </h2>
+
+            <div style={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: '12px',
+              background: 'rgba(0, 0, 0, 0.6)',
+              border: '1px dashed var(--crt-border-muted)',
+              padding: '24px 40px',
+              borderRadius: '4px'
+            }}>
+              <span style={{
+                color: (preset === 'amber' ? '#ffb000' : '#00ff66'),
+                fontSize: '3.5rem',
+                fontWeight: 'bold',
+                fontFamily: 'VT323, monospace',
+                lineHeight: '1',
+                textShadow: 'var(--crt-glow)'
+              }}>
+                {room.roundTransition.winnerName.toUpperCase()}
+              </span>
+            </div>
+
+            {/* standings breakdown */}
+            <div style={{
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '8px',
+              fontSize: '0.9rem',
+              color: 'var(--crt-text-secondary)',
+              textAlign: 'left',
+              width: '100%',
+              fontFamily: 'VT323, monospace'
+            }}>
+              <div style={{ borderBottom: '1px dashed var(--crt-border-muted)', paddingBottom: '4px', marginBottom: '4px', fontWeight: 'bold' }}>
+                CURRENT ROUND WINS:
+              </div>
+              {room.players.map(p => (
+                <div key={p.id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1.2rem' }}>
+                  <span>{p.name} {p.id === userId && '(YOU)'}</span>
+                  <span style={{ color: 'var(--crt-text)' }}>{p.roundWins} WINS</span>
+                </div>
+              ))}
+            </div>
+
+            <div style={{
+              fontSize: '0.65rem',
+              color: 'var(--crt-text-muted)',
+              fontFamily: 'Press Start 2P, monospace',
+              marginTop: '8px'
+            }}>
+              PREPARING ROUND {room.roundTransition.roundNumber + 1}...
             </div>
           </div>
         </div>

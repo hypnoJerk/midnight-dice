@@ -15,6 +15,7 @@ export interface Player {
   diceActive: number[];      // The array of dice from the current roll (unsaved)
   rollsCount: number;        // Number of rolls taken in the current turn
   shootoutScore?: number;    // Score during a tie-breaker (sum of all 6 dice)
+  roundWins: number;         // Number of round wins (best 2 out of 3)
 }
 
 export interface Room {
@@ -24,11 +25,16 @@ export interface Room {
   players: Player[];
   activePlayerIndex: number; // Index of the player currently rolling
   winners: string[];         // ID(s) of winner(s) at the end of the round or shootout
+  currentRound: number;      // Current round (1, 2, or 3)
   turnTransition?: {
     playerName: string;
     score: number;
     isDQ: boolean;
     isShootout?: boolean;
+  } | null;
+  roundTransition?: {        // Transition info for round completion
+    roundNumber: number;
+    winnerName: string;
   } | null;
 }
 
@@ -50,11 +56,16 @@ export interface RoomSyncPayload {
   gameState: GameState;
   activePlayerId: string | null;
   winners: string[];
+  currentRound: number;
   turnTransition?: {
     playerName: string;
     score: number;
     isDQ: boolean;
     isShootout?: boolean;
+  } | null;
+  roundTransition?: {
+    roundNumber: number;
+    winnerName: string;
   } | null;
 }
 

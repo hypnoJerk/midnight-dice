@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { initializeSockets } from '../src/socket/connection.js';
+import { initializeSockets, buildSyncPayload } from '../src/socket/connection.js';
 import { RoomManager } from '../src/game/roomManager.js';
 import { Server, Socket } from 'socket.io';
 
@@ -119,5 +119,27 @@ describe('Socket Coordinator Integration & Authoritative Move Validation', () =>
     // Simulate dice settling for the remaining 4 dice
     settledCallback!({ roomCode: room.code, userId: 'user-A', dice: [2, 3, 4, 5] });
     expect(player.diceActive.length).toBe(4);
+  });
+
+  describe('buildSyncPayload activePlayerIndex bounds checking', () => {
+    it('should safely build sync payload without throwing when activePlayerIndex is out of bounds', () => {
+      const room: any = {
+        code: 'ABCD',
+        gameState: 'PLAYING',
+        players: [
+          { id: 'user-1', name: 'Alice', roundWins: 0 },
+          { id: 'user-2', name: 'Bob', roundWins: 0 }
+        ],
+        activePlayerIndex: 2, // Out of bounds!
+        winners: [],
+        currentRound: 1,
+        turnTransition: null,
+        roundTransition: null
+      };
+
+      const payload = buildSyncPayload(room);
+      expect(payload.activePlayerId).toBeNull();
+      expect(payload.roomCode).toBe('ABCD');
+    });
   });
 });

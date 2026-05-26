@@ -215,7 +215,7 @@ export function SandboxDebugView({ preset, onBack }: { preset: 'green' | 'amber'
           </div>
           <div>KEPT_COUNT: {keptDice.length}/6</div>
           <div>QUALIFIED: {hasOne && hasFour ? 'YES' : 'NO'}</div>
-          <div>SCORE: {scoring.isDQ ? 'BUST (DQ\'D)' : `${scoring.score} PTS`}</div>
+          <div>SCORE: {scoring.isDQ ? 'DQ\'d' : `${scoring.score} PTS`}</div>
         </div>
       </div>
 

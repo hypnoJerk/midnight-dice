@@ -92,7 +92,8 @@ export class RoomManager {
       hasFour: false,
       diceKept: [],
       diceActive: [],
-      rollsCount: 0
+      rollsCount: 0,
+      roundWins: 0
     };
 
     const room: Room = {
@@ -101,7 +102,9 @@ export class RoomManager {
       gameState: 'LOBBY',
       players: [host],
       activePlayerIndex: -1,
-      winners: []
+      winners: [],
+      currentRound: 1,
+      roundTransition: null
     };
 
     this.rooms.set(code, room);
@@ -144,7 +147,8 @@ export class RoomManager {
         hasFour: false,
         diceKept: [],
         diceActive: [],
-        rollsCount: 0
+        rollsCount: 0,
+        roundWins: 0
       };
       room.players.push(newPlayer);
     }
@@ -198,11 +202,14 @@ export class RoomManager {
       player.diceActive = [];
       player.rollsCount = 0;
       player.shootoutScore = undefined;
+      player.roundWins = 0;
     }
 
     room.gameState = 'PLAYING';
     room.activePlayerIndex = 0;
     room.winners = [];
+    room.currentRound = 1;
+    room.roundTransition = null;
 
     return room;
   }
@@ -397,14 +404,29 @@ export class RoomManager {
         // Set active index to the first shootout participant
         room.activePlayerIndex = room.players.findIndex(p => shootoutIds.has(p.id));
       } else {
-        // Complete game over
-        room.gameState = 'GAME_OVER';
-        room.activePlayerIndex = -1;
-        room.winners = evaluation.winnerIds;
+        // Round has a clear, single winner!
+        const winnerId = evaluation.winnerIds[0];
+        const winner = room.players.find(p => p.id === winnerId);
+        if (winner) {
+          winner.roundWins += 1;
+          
+          if (winner.roundWins >= 2) {
+            // Complete game over
+            room.gameState = 'GAME_OVER';
+            room.activePlayerIndex = -1;
+            room.winners = [winnerId];
 
-        // Trigger DB persist hook
-        if (this.onGameOverCallback) {
-          this.onGameOverCallback(room).catch(console.error);
+            // Trigger DB persist hook
+            if (this.onGameOverCallback) {
+              this.onGameOverCallback(room).catch(console.error);
+            }
+          } else {
+            // Show round completion transition
+            room.roundTransition = {
+              roundNumber: room.currentRound,
+              winnerName: winner.name
+            };
+          }
         }
       }
     }
@@ -447,16 +469,62 @@ export class RoomManager {
 
         room.activePlayerIndex = room.players.findIndex(p => tiedIds.has(p.id));
       } else {
-        // Shootout tie is broken! Game Over.
-        room.gameState = 'GAME_OVER';
-        room.activePlayerIndex = -1;
-        room.winners = evaluation.winnerIds;
+        // Shootout tie is broken! We have a round winner.
+        const winnerId = evaluation.winnerIds[0];
+        const winner = room.players.find(p => p.id === winnerId);
+        if (winner) {
+          winner.roundWins += 1;
+          
+          if (winner.roundWins >= 2) {
+            // Complete game over
+            room.gameState = 'GAME_OVER';
+            room.activePlayerIndex = -1;
+            room.winners = [winnerId];
 
-        // Trigger DB persist hook
-        if (this.onGameOverCallback) {
-          this.onGameOverCallback(room).catch(console.error);
+            // Trigger DB persist hook
+            if (this.onGameOverCallback) {
+              this.onGameOverCallback(room).catch(console.error);
+            }
+          } else {
+            // Show round completion transition
+            room.roundTransition = {
+              roundNumber: room.currentRound,
+              winnerName: winner.name
+            };
+          }
         }
       }
     }
+  }
+
+  /**
+   * Completes the round transition, advances to the next round, and resets player state.
+   */
+  public completeRoundTransition(roomCode: string): Room | undefined {
+    const room = this.rooms.get(roomCode.toUpperCase());
+    if (!room) return undefined;
+
+    if (room.roundTransition) {
+      room.roundTransition = null;
+      room.currentRound += 1;
+
+      // Reset round-specific player properties
+      for (const player of room.players) {
+        player.score = 0;
+        player.isDQ = false;
+        player.hasOne = false;
+        player.hasFour = false;
+        player.diceKept = [];
+        player.diceActive = [];
+        player.rollsCount = 0;
+        player.shootoutScore = undefined;
+      }
+
+      // Start new round from first player
+      room.gameState = 'PLAYING';
+      room.activePlayerIndex = 0;
+    }
+
+    return room;
   }
 }

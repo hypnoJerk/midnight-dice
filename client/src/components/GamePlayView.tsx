@@ -113,6 +113,14 @@ export function GamePlayView({
         <span style={{ color: 'var(--crt-text-secondary)' }}>
           MODE: {room.gameState}
         </span>
+        <span style={{ 
+          color: 'var(--crt-text)', 
+          fontFamily: 'Press Start 2P, monospace', 
+          fontSize: '0.6rem',
+          textShadow: 'var(--crt-glow)'
+        }}>
+          ROUND {room.currentRound || 1} / 3
+        </span>
         <span style={{ color: isConnectedColor(room.gameState) }}>
           ROOM: {room.code}
         </span>

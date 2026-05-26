@@ -72,6 +72,27 @@ export function Scoreboard({ players, activePlayerId, winners, myUserId }: Score
                     [HOST]
                   </span>
                 )}
+
+                {/* Round Wins Indicators (Best 2 out of 3) */}
+                <div style={{ display: 'flex', gap: '6px', marginLeft: '4px', alignItems: 'center' }}>
+                  {[1, 2].map((roundNum) => {
+                    const hasWon = player.roundWins >= roundNum;
+                    return (
+                      <div 
+                        key={roundNum}
+                        style={{
+                          width: '8px',
+                          height: '8px',
+                          borderRadius: '50%',
+                          background: hasWon ? 'var(--crt-border)' : 'rgba(0, 0, 0, 0.4)',
+                          border: `1px solid ${hasWon ? 'var(--crt-border)' : 'var(--crt-border-muted)'}`,
+                          boxShadow: hasWon ? 'var(--crt-glow)' : 'none',
+                          transition: 'var(--transition-smooth)'
+                        }}
+                      />
+                    );
+                  })}
+                </div>
               </div>
 
               <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
@@ -81,10 +102,10 @@ export function Scoreboard({ players, activePlayerId, winners, myUserId }: Score
                   <span style={{ color: player.hasFour ? '#00ff66' : 'var(--crt-text-muted)' }}>4</span>
                 </div>
 
-                {/* Score or BUST or Winner mapping */}
+                {/* Score or DQ'd or Winner mapping */}
                 <div style={{ fontFamily: 'VT323, monospace', fontSize: '1.4rem' }}>
                   {player.isDQ ? (
-                    <span style={{ color: 'var(--color-danger)', fontWeight: 'bold' }}>BUST</span>
+                    <span style={{ color: 'var(--color-danger)', fontWeight: 'bold' }}>DQ'd</span>
                   ) : player.shootoutScore !== undefined && player.shootoutScore >= 0 ? (
                     <span style={{ color: '#00ff66' }}>S: {player.shootoutScore}</span>
                   ) : (

@@ -10,9 +10,13 @@ export function buildSyncPayload(room: Room) {
     roomCode: room.code,
     players: room.players,
     gameState: room.gameState,
-    activePlayerId: room.activePlayerIndex >= 0 ? room.players[room.activePlayerIndex].id : null,
+    activePlayerId: (room.activePlayerIndex >= 0 && room.activePlayerIndex < room.players.length)
+      ? room.players[room.activePlayerIndex].id
+      : null,
     winners: room.winners,
-    turnTransition: room.turnTransition || null
+    currentRound: room.currentRound || 1,
+    turnTransition: room.turnTransition || null,
+    roundTransition: room.roundTransition || null
   };
 }
 
@@ -152,6 +156,19 @@ export function initializeSockets(io: Server, roomManager: RoomManager) {
               const updatedRoom = roomManager.completeTurnTransition(roomCode);
               if (updatedRoom) {
                 io.to(roomCode.toUpperCase()).emit('room:sync', buildSyncPayload(updatedRoom));
+
+                if (updatedRoom.roundTransition) {
+                  setTimeout(() => {
+                    try {
+                      const finalRoom = roomManager.completeRoundTransition(roomCode);
+                      if (finalRoom) {
+                        io.to(roomCode.toUpperCase()).emit('room:sync', buildSyncPayload(finalRoom));
+                      }
+                    } catch (e) {
+                      console.error('Error completing round transition:', e);
+                    }
+                  }, 5000);
+                }
               }
             } catch (e) {
               console.error('Error advancing transition:', e);
@@ -175,6 +192,19 @@ export function initializeSockets(io: Server, roomManager: RoomManager) {
               const updatedRoom = roomManager.completeTurnTransition(roomCode);
               if (updatedRoom) {
                 io.to(roomCode.toUpperCase()).emit('room:sync', buildSyncPayload(updatedRoom));
+
+                if (updatedRoom.roundTransition) {
+                  setTimeout(() => {
+                    try {
+                      const finalRoom = roomManager.completeRoundTransition(roomCode);
+                      if (finalRoom) {
+                        io.to(roomCode.toUpperCase()).emit('room:sync', buildSyncPayload(finalRoom));
+                      }
+                    } catch (e) {
+                      console.error('Error completing round transition:', e);
+                    }
+                  }, 5000);
+                }
               }
             } catch (e) {
               console.error('Error advancing transition:', e);
