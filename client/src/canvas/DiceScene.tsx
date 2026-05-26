@@ -174,9 +174,9 @@ export function DiceScene({
   const camZ = debugConfig ? debugConfig.camZ : 2.0;
   const fov = debugConfig ? debugConfig.fov : 38;
 
-  const targetX = debugConfig ? debugConfig.targetX : -0.2;
-  const targetY = debugConfig ? debugConfig.targetY : 1.8;
-  const targetZ = debugConfig ? debugConfig.targetZ : -0.2;
+  const targetX = debugConfig ? debugConfig.targetX : 0.0;
+  const targetY = debugConfig ? debugConfig.targetY : 0.5;
+  const targetZ = debugConfig ? debugConfig.targetZ : 0.0;
 
   const ambientIntensity = debugConfig ? debugConfig.ambientIntensity : 2.30;
   const lightY = debugConfig ? debugConfig.lightY : 10.5;

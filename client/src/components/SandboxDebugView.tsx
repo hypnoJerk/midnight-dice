@@ -32,9 +32,9 @@ export function SandboxDebugView({ preset, onBack }: { preset: 'green' | 'amber'
     camY: 11.5,
     camZ: 2.0,
     fov: 38,
-    targetX: -0.2,
-    targetY: 1.8,
-    targetZ: -0.2,
+    targetX: 0.0,
+    targetY: 0.5,
+    targetZ: 0.0,
     ambientIntensity: 2.30,
     lightY: 10.5,
     diceScale: 0.80
