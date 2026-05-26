@@ -189,6 +189,7 @@ services:
     restart: always
     environment:
       VITE_API_URL: https://midnight.yourdomain.com/api
+      VITE_ALLOWED_HOSTS: midnight.yourdomain.com
     networks:
       - shared-nginx-network
     expose:
@@ -262,6 +263,36 @@ Reload the shared Nginx proxy:
 ```bash
 docker exec shared_nginx_container_name nginx -s reload
 ```
+
+---
+
+## 🗄️ Database Management & Schema Resets
+
+---
+
+## ⚙️ Environment Configuration
+
+Midnight utilizes environment variables to securely and dynamically adjust configurations in both development and production. An example template is provided in the monorepo root as [.env.example](file:///home/shaunh/ai-workspace/1_4_34/project_code/.env.example).
+
+### How to Configure Variables
+1. **Via local `.env` file**:
+   Copy `.env.example` to the `server/` directory as `.env`:
+   ```bash
+   cp .env.example server/.env
+   ```
+2. **Via Docker Compose**:
+   In containerized deployments, define these directly inside the `environment:` section of your `docker-compose.yml` file (recommended for staging and production).
+
+### Configuration Options Reference
+
+| Variable Name | Context | Default Value | Description |
+| :--- | :--- | :--- | :--- |
+| `PORT` | Server | `3001` | The internal port the Express & Socket.io server listens on. |
+| `DATABASE_URL` | Server | *See Template* | Authoritative connection URI to your PostgreSQL database. |
+| `NODE_ENV` | Server | `development` | The environment mode. Set to `production` in live setups. |
+| `PURGE_DB` / `RESET_DB`| Server | `false` | Set to `true` to drop all tables and start with fresh schemas. |
+| `VITE_API_URL` | Client | *Host URL* | The public URL of the server REST API (e.g. `https://midnight.yourdomain.com/api`). |
+| `VITE_ALLOWED_HOSTS` | Client | `localhost` | Comma-separated list of domains allowed to request Vite assets. Prevents host blockages. |
 
 ---
 
