@@ -8,11 +8,14 @@ import GamePlayView from './components/GamePlayView.js';
 import CRTOverlay from './components/CRTOverlay.js';
 import SandboxDebugView from './components/SandboxDebugView.js';
 import LeaderboardView from './components/LeaderboardView.js';
+import { usePWAInstall } from './hooks/usePWAInstall.js';
+import InstallPromotion from './components/InstallPromotion.js';
 
 function GameAppInner() {
   const { theme, preset, toggleTheme, togglePreset } = useTheme();
   const { isMuted, toggleMute } = useAudio();
   const { playClick, playSuccess } = useSound();
+  const { isInstallable } = usePWAInstall();
   
   const {
     room,
@@ -222,6 +225,13 @@ function GameAppInner() {
                   {isMuted ? 'UNMUTE' : 'MUTE'}
                 </button>
               </div>
+              
+              {isInstallable && (
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px' }}>
+                  <span style={{ fontSize: '1.1rem', color: 'var(--crt-text-secondary)' }}>INSTALLER:</span>
+                  <InstallPromotion />
+                </div>
+              )}
             </div>
             
             <button 

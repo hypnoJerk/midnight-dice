@@ -13,6 +13,9 @@ export default defineConfig(({ mode }) => {
       VitePWA({
         registerType: 'autoUpdate',
         injectRegister: 'auto',
+        devOptions: {
+          enabled: true
+        },
         includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'masked-icon.svg'],
         manifest: {
           name: 'Midnight 1-4-24',
