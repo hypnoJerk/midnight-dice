@@ -234,8 +234,9 @@ function GameAppInner() {
                     onClick={() => { playClick(); logoutUser(); setShowSettings(false); }}
                     className="btn-retro"
                     style={{
-                      padding: '6px 12px',
-                      fontSize: '0.75rem',
+                      padding: '8px 8px',
+                      fontSize: '0.9rem',
+                      width: '130px',
                       borderColor: 'var(--color-danger)',
                       color: 'var(--color-danger)',
                       boxShadow: 'none'
@@ -443,35 +444,6 @@ function GameAppInner() {
                   }}>
                     1-4-24 MULTIPLAYER
                   </p>
-                </div>
-
-                <div style={{
-                  background: 'var(--crt-bg-card)',
-                  border: '1px dashed var(--crt-border-muted)',
-                  padding: '12px 16px',
-                  borderRadius: '4px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  gap: '12px'
-                }}>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                    <span style={{ fontSize: '0.65rem', color: 'var(--crt-text-muted)', fontFamily: 'Press Start 2P' }}>LOGGED IN AS</span>
-                    <span style={{ fontSize: '1.2rem', color: 'var(--crt-text)', textShadow: 'var(--crt-glow)' }}>{displayName}</span>
-                  </div>
-                  {/* <button
-                    onClick={() => { playClick(); logoutUser(); }}
-                    className="btn-retro"
-                    style={{
-                      padding: '6px 12px',
-                      fontSize: '0.75rem',
-                      borderColor: 'var(--color-danger)',
-                      color: 'var(--color-danger)',
-                      boxShadow: 'none'
-                    }}
-                  >
-                    LOGOUT
-                  </button> */}
                 </div>
 
                 <hr style={{ border: '0', borderTop: '1px dashed var(--crt-border-muted)' }} />
