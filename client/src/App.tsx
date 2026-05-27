@@ -446,58 +446,88 @@ function GameAppInner() {
 
                 <hr style={{ border: '0', borderTop: '1px dashed var(--crt-border-muted)' }} />
 
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                  <button
-                    onClick={handleHostRoom}
-                    className="btn-retro"
-                    style={{ padding: '14px', fontSize: '1.1rem' }}
-                  >
-                    HOST NEW MATCH
-                  </button>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                  {/* Primary Option: Join Game */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                    <div style={{
+                      fontFamily: 'Press Start 2P, monospace',
+                      fontSize: '0.75rem',
+                      color: 'var(--crt-text)',
+                      textShadow: 'var(--crt-glow)',
+                      textAlign: 'center',
+                      letterSpacing: '0.1em',
+                      marginBottom: '4px'
+                    }}>
+                      ▼ JOIN ACTIVE MATCH
+                    </div>
 
+                    <input
+                      type="text"
+                      placeholder="ENTER 4-DIGIT CODE"
+                      maxLength={4}
+                      value={roomCode}
+                      onChange={(e) => setRoomCode(e.target.value.toUpperCase())}
+                      style={{
+                        background: 'rgba(0, 0, 0, 0.9)',
+                        border: roomCode.length === 4 
+                          ? '2px solid var(--crt-border)' 
+                          : '2px solid var(--crt-text-secondary)',
+                        borderRadius: '4px',
+                        padding: '14px',
+                        color: 'var(--crt-text)',
+                        textAlign: 'center',
+                        fontSize: '1.25rem',
+                        letterSpacing: '0.25em',
+                        boxShadow: roomCode.length === 4
+                          ? '0 0 15px var(--crt-border), inset 0 0 10px rgba(0,0,0,0.9)'
+                          : 'inset 0 0 10px rgba(0,0,0,0.9)',
+                        transition: 'var(--transition-smooth)'
+                      }}
+                    />
+
+                    <button
+                      onClick={handleJoinRoom}
+                      disabled={roomCode.length !== 4}
+                      className={roomCode.length === 4 ? 'btn-retro btn-retro-primary' : 'btn-retro'}
+                      style={{ 
+                        padding: '14px',
+                        fontSize: '1.1rem',
+                        letterSpacing: '0.05em'
+                      }}
+                    >
+                      {roomCode.length === 4 ? '⚡ DEPLOY TO ROOM ⚡' : 'ENTER MATCH ROOM'}
+                    </button>
+                  </div>
+
+                  {/* Separator */}
                   <div style={{
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
                     gap: '12px',
-                    color: 'var(--crt-text-muted)',
-                    fontSize: '0.8rem'
+                    color: 'var(--crt-text-secondary)',
+                    fontSize: '0.7rem',
+                    fontFamily: 'Press Start 2P, monospace'
                   }}>
                     <span style={{ height: '1px', flex: 1, background: 'var(--crt-border-muted)' }} />
-                    <span>OR JOIN EXISTING</span>
+                    <span>OR HOST A ROOM</span>
                     <span style={{ height: '1px', flex: 1, background: 'var(--crt-border-muted)' }} />
                   </div>
 
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                    <input
-                      type="text"
-                      placeholder="ROOM CODE"
-                      maxLength={4}
-                      value={roomCode}
-                      onChange={(e) => setRoomCode(e.target.value.toUpperCase())}
-                      style={{
-                        background: 'rgba(0,0,0,0.8)',
-                        border: '2px solid var(--crt-border-muted)',
-                        borderRadius: '4px',
-                        padding: '12px',
-                        color: 'var(--crt-text)',
-                        textAlign: 'center',
-                        letterSpacing: '0.3em',
-                        boxShadow: 'inset 0 0 10px rgba(0,0,0,0.9)'
-                      }}
-                    />
-                    <button
-                      onClick={handleJoinRoom}
-                      disabled={roomCode.length !== 4}
-                      className="btn-retro"
-                      style={{ 
-                        borderColor: (roomCode.length === 4) ? 'var(--crt-border)' : 'var(--crt-border-muted)',
-                        padding: '14px'
-                      }}
-                    >
-                      ENTER MATCH ROOM
-                    </button>
-                  </div>
+                  {/* Secondary Option: Host Game */}
+                  <button
+                    onClick={handleHostRoom}
+                    className="btn-retro"
+                    style={{ 
+                      padding: '12px', 
+                      fontSize: '0.95rem',
+                      borderColor: 'var(--crt-border-muted)',
+                      color: 'var(--crt-text-secondary)',
+                      boxShadow: 'none'
+                    }}
+                  >
+                    HOST NEW MATCH
+                  </button>
 
                   <hr style={{ border: '0', borderTop: '1px dashed var(--crt-border-muted)', margin: '4px 0' }} />
                   

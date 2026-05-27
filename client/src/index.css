@@ -145,6 +145,20 @@ h1, h2, h3, h4, h5, h6 {
   text-shadow: none;
 }
 
+.btn-retro-primary {
+  background: var(--crt-border) !important;
+  color: var(--crt-bg) !important;
+  box-shadow: var(--crt-glow-strong) !important;
+  text-shadow: none !important;
+}
+
+.btn-retro-primary:hover {
+  background: transparent !important;
+  color: var(--crt-text) !important;
+  box-shadow: var(--crt-glow) !important;
+  text-shadow: var(--crt-glow-text) !important;
+}
+
 .btn-retro:active {
   transform: scale(0.98);
 }
