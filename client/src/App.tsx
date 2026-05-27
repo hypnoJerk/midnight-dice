@@ -15,7 +15,7 @@ function GameAppInner() {
   const { theme, preset, toggleTheme, togglePreset } = useTheme();
   const { isMuted, toggleMute } = useAudio();
   const { playClick, playSuccess } = useSound();
-  const { isInstallable } = usePWAInstall();
+  const { isInstallable, isInstalled, installApp } = usePWAInstall();
   
   const {
     room,
@@ -247,10 +247,25 @@ function GameAppInner() {
                 </div>
               )}
 
-              {isInstallable && (
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px' }}>
+                <span style={{ fontSize: '1.1rem', color: 'var(--crt-text-secondary)' }}>INSTALL:</span>
+                <InstallPromotion 
+                  isInstallable={isInstallable} 
+                  isInstalled={isInstalled} 
+                  installApp={installApp} 
+                />
+              </div>
+
+              {displayName && displayName.toUpperCase() === 'HYPNO' && (
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px' }}>
-                  <span style={{ fontSize: '1.1rem', color: 'var(--crt-text-secondary)' }}>INSTALLER:</span>
-                  <InstallPromotion />
+                  <span style={{ fontSize: '1.1rem', color: 'var(--crt-text-secondary)' }}>SANDBOX:</span>
+                  <button 
+                    onClick={() => { playClick(); setIsSandbox(true); setShowSettings(false); }} 
+                    className="btn-retro" 
+                    style={{ fontSize: '0.9rem', width: '130px', padding: '8px' }}
+                  >
+                    LAUNCH
+                  </button>
                 </div>
               )}
             </div>
@@ -532,22 +547,7 @@ function GameAppInner() {
                   </div>
 
                   <hr style={{ border: '0', borderTop: '1px dashed var(--crt-border-muted)', margin: '4px 0' }} />
-                  
-                  {displayName && displayName.toUpperCase() === 'HYPNO' && (
-                    <button
-                      onClick={() => { playClick(); setIsSandbox(true); }}
-                      className="btn-retro"
-                      style={{
-                        borderColor: 'var(--crt-text-secondary)',
-                        color: 'var(--crt-text-secondary)',
-                        fontFamily: 'Press Start 2P, monospace',
-                        fontSize: '0.55rem',
-                        padding: '12px'
-                      }}
-                    >
-                      BOOT SANDBOX PLAYGROUND
-                    </button>
-                  )}
+
 
                   <button
                     onClick={() => { playClick(); setShowLeaderboard(true); }}
