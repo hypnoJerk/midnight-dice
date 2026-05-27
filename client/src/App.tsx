@@ -225,7 +225,27 @@ function GameAppInner() {
                   {isMuted ? 'UNMUTE' : 'MUTE'}
                 </button>
               </div>
-              
+
+              {/* logout button */}
+              {userId && (
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px' }}>
+                  <span style={{ fontSize: '1.1rem', color: 'var(--crt-text-secondary)' }}>ACCOUNT:</span>
+                  <button
+                    onClick={() => { playClick(); logoutUser(); setShowSettings(false); }}
+                    className="btn-retro"
+                    style={{
+                      padding: '6px 12px',
+                      fontSize: '0.75rem',
+                      borderColor: 'var(--color-danger)',
+                      color: 'var(--color-danger)',
+                      boxShadow: 'none'
+                    }}
+                  >
+                    LOGOUT
+                  </button>
+                </div>
+              )}
+
               {isInstallable && (
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px' }}>
                   <span style={{ fontSize: '1.1rem', color: 'var(--crt-text-secondary)' }}>INSTALLER:</span>
@@ -439,7 +459,7 @@ function GameAppInner() {
                     <span style={{ fontSize: '0.65rem', color: 'var(--crt-text-muted)', fontFamily: 'Press Start 2P' }}>LOGGED IN AS</span>
                     <span style={{ fontSize: '1.2rem', color: 'var(--crt-text)', textShadow: 'var(--crt-glow)' }}>{displayName}</span>
                   </div>
-                  <button
+                  {/* <button
                     onClick={() => { playClick(); logoutUser(); }}
                     className="btn-retro"
                     style={{
@@ -451,13 +471,43 @@ function GameAppInner() {
                     }}
                   >
                     LOGOUT
-                  </button>
+                  </button> */}
                 </div>
 
                 <hr style={{ border: '0', borderTop: '1px dashed var(--crt-border-muted)' }} />
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                  {/* Primary Option: Join Game */}
+                  {/* Primary Option: Host Game */}
+                  <button
+                    onClick={handleHostRoom}
+                    className="btn-retro"
+                    style={{ 
+                      padding: '12px', 
+                      fontSize: '1.95rem',
+                      borderColor: 'var(--crt-border-muted)',
+                      color: 'var(--crt-text-secondary)',
+                      boxShadow: 'none'
+                    }}
+                  >
+                    HOST NEW MATCH
+                  </button>
+
+                  {/* Separator */}
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '12px',
+                    color: 'var(--crt-text-secondary)',
+                    fontSize: '0.7rem',
+                    fontFamily: 'Press Start 2P, monospace'
+                  }}>
+                    <span style={{ height: '1px', flex: 1, background: 'var(--crt-border-muted)' }} />
+                    <span style={{ fontSize: '1.55rem' }}>OR</span>
+                    <span style={{ height: '1px', flex: 1, background: 'var(--crt-border-muted)' }} />
+                  </div>
+
+                  {/* Secondary Option: Join Game */}
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                     <div style={{
                       fontFamily: 'Press Start 2P, monospace',
@@ -508,36 +558,6 @@ function GameAppInner() {
                       {roomCode.length === 4 ? '⚡ JOIN MATCH ⚡' : 'JOIN MATCH'}
                     </button>
                   </div>
-
-                  {/* Separator */}
-                  <div style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '12px',
-                    color: 'var(--crt-text-secondary)',
-                    fontSize: '0.7rem',
-                    fontFamily: 'Press Start 2P, monospace'
-                  }}>
-                    <span style={{ height: '1px', flex: 1, background: 'var(--crt-border-muted)' }} />
-                    <span style={{ fontSize: '1.55rem' }}>OR</span>
-                    <span style={{ height: '1px', flex: 1, background: 'var(--crt-border-muted)' }} />
-                  </div>
-
-                  {/* Secondary Option: Host Game */}
-                  <button
-                    onClick={handleHostRoom}
-                    className="btn-retro"
-                    style={{ 
-                      padding: '12px', 
-                      fontSize: '1.95rem',
-                      borderColor: 'var(--crt-border-muted)',
-                      color: 'var(--crt-text-secondary)',
-                      boxShadow: 'none'
-                    }}
-                  >
-                    HOST NEW MATCH
-                  </button>
 
                   <hr style={{ border: '0', borderTop: '1px dashed var(--crt-border-muted)', margin: '4px 0' }} />
                   
