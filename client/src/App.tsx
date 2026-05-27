@@ -284,7 +284,7 @@ function GameAppInner() {
                     letterSpacing: '0.05em',
                     marginTop: '4px'
                   }}>
-                    1-4-24 MULTIPLAYER RETRO PWA
+                    1-4-24 MULTIPLAYER
                   </p>
                 </div>
 
@@ -411,7 +411,7 @@ function GameAppInner() {
                     letterSpacing: '0.05em',
                     marginTop: '4px'
                   }}>
-                    1-4-24 MULTIPLAYER RETRO PWA
+                    1-4-24 MULTIPLAYER
                   </p>
                 </div>
 
@@ -463,7 +463,7 @@ function GameAppInner() {
 
                     <input
                       type="text"
-                      placeholder="ENTER 4-DIGIT CODE"
+                      placeholder="ENTER CODE"
                       maxLength={4}
                       value={roomCode}
                       onChange={(e) => setRoomCode(e.target.value.toUpperCase())}
@@ -491,11 +491,11 @@ function GameAppInner() {
                       className={roomCode.length === 4 ? 'btn-retro btn-retro-primary' : 'btn-retro'}
                       style={{ 
                         padding: '14px',
-                        fontSize: '1.1rem',
+                        fontSize: '1.5rem',
                         letterSpacing: '0.05em'
                       }}
                     >
-                      {roomCode.length === 4 ? '⚡ DEPLOY TO ROOM ⚡' : 'ENTER MATCH ROOM'}
+                      {roomCode.length === 4 ? '⚡ JOIN MATCH ⚡' : 'JOIN MATCH'}
                     </button>
                   </div>
 
@@ -510,7 +510,7 @@ function GameAppInner() {
                     fontFamily: 'Press Start 2P, monospace'
                   }}>
                     <span style={{ height: '1px', flex: 1, background: 'var(--crt-border-muted)' }} />
-                    <span>OR HOST A ROOM</span>
+                    <span style={{ fontSize: '1.55rem' }}>OR</span>
                     <span style={{ height: '1px', flex: 1, background: 'var(--crt-border-muted)' }} />
                   </div>
 
@@ -520,7 +520,7 @@ function GameAppInner() {
                     className="btn-retro"
                     style={{ 
                       padding: '12px', 
-                      fontSize: '0.95rem',
+                      fontSize: '1.95rem',
                       borderColor: 'var(--crt-border-muted)',
                       color: 'var(--crt-text-secondary)',
                       boxShadow: 'none'
@@ -554,7 +554,7 @@ function GameAppInner() {
                       borderColor: 'var(--crt-text-secondary)',
                       color: 'var(--crt-text-secondary)',
                       fontFamily: 'Press Start 2P, monospace',
-                      fontSize: '0.55rem',
+                      fontSize: '1.55rem',
                       padding: '12px',
                       marginTop: '8px'
                     }}

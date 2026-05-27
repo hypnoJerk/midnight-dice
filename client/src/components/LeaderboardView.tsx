@@ -173,7 +173,7 @@ export function LeaderboardView({ onClose, myUserId, preset = 'green' }: Leaderb
           color: 'var(--crt-text-secondary)',
           letterSpacing: '0.05em'
         }}>
-          CENTRAL REGISTERED HIGH SCORE DIRECTORY
+          REGISTERED HIGH SCORES
         </p>
       </div>
 
@@ -308,7 +308,7 @@ export function LeaderboardView({ onClose, myUserId, preset = 'green' }: Leaderb
                       fontSize: '1rem'
                     }}>
                       <th style={{ padding: '8px 12px' }}>RANK</th>
-                      <th style={{ padding: '8px 12px' }}>PLAYER DISPLAY_NAME</th>
+                      <th style={{ padding: '8px 12px' }}>PLAYER</th>
                       <th style={{ padding: '8px 12px', textAlign: 'center' }}>WINS</th>
                       <th style={{ padding: '8px 12px', textAlign: 'center' }}>PLAYED</th>
                       <th style={{ padding: '8px 12px', textAlign: 'center' }}>WIN_RATE</th>
@@ -363,7 +363,7 @@ export function LeaderboardView({ onClose, myUserId, preset = 'green' }: Leaderb
                   border: '1px dashed var(--crt-border-muted)',
                   color: 'var(--crt-text-muted)'
                 }}>
-                  NO RECENT SYSTEM TERMINALS RECORDED
+                  NO RECENT GAMES RECORDED
                 </div>
               ) : (
                 <table style={{
@@ -436,7 +436,7 @@ export function LeaderboardView({ onClose, myUserId, preset = 'green' }: Leaderb
                 color: 'var(--crt-text)'
               }}>
                 <div>
-                  PLAYER DISPLAY: <span style={{ textShadow: 'var(--crt-glow)' }}>{currentUserStats.displayName}</span>
+                  NAME: <span style={{ textShadow: 'var(--crt-glow)' }}>{currentUserStats.displayName}</span>
                 </div>
                 <div style={{ display: 'flex', gap: '20px' }}>
                   <span>WINS: {currentUserStats.totalWins}</span>
@@ -464,7 +464,7 @@ export function LeaderboardView({ onClose, myUserId, preset = 'green' }: Leaderb
           style={{ flex: 1, borderColor: 'var(--crt-text-secondary)', color: 'var(--crt-text-secondary)' }}
           disabled={loading}
         >
-          RE-POLL DATABANK
+          RELOAD DATA
         </button>
         <button
           onClick={() => { playClick(); onClose(); }}
