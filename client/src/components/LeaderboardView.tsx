@@ -142,8 +142,8 @@ export function LeaderboardView({ onClose, myUserId, preset = 'green' }: Leaderb
             width: '8px',
             height: '8px',
             borderRadius: '50%',
-            background: '#00ff66',
-            boxShadow: '0 0 6px #00ff66',
+            background: 'var(--crt-accent)',
+            boxShadow: '0 0 6px var(--crt-accent)',
             display: 'inline-block',
             animation: 'crt-flicker 0.4s infinite'
           }} />
@@ -411,7 +411,7 @@ export function LeaderboardView({ onClose, myUserId, preset = 'green' }: Leaderb
           {/* Personal Stats Card */}
           {currentUserStats && (
             <div style={{
-              background: 'rgba(0, 0, 0, 0.4)',
+              background: 'var(--crt-bg-card)',
               border: '1px dashed var(--crt-border)',
               borderRadius: '4px',
               padding: '16px',

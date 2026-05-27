@@ -188,7 +188,7 @@ export function GamePlayView({
               <div style={{ 
                 fontFamily: 'Press Start 2P, monospace', 
                 fontSize: '0.85rem', 
-                color: '#00ff66',
+                color: 'var(--crt-accent)',
                 textAlign: 'center',
                 letterSpacing: '0.05em'
               }}>
@@ -230,8 +230,8 @@ export function GamePlayView({
                   className="btn-retro"
                   style={{ 
                     flex: 1, 
-                    borderColor: (!isPhysicsRolling && selectedIndexes.length > 0) ? '#00ff66' : 'var(--crt-border-muted)',
-                    color: (!isPhysicsRolling && selectedIndexes.length > 0) ? '#00ff66' : 'var(--crt-text-muted)'
+                    borderColor: (!isPhysicsRolling && selectedIndexes.length > 0) ? 'var(--crt-accent)' : 'var(--crt-border-muted)',
+                    color: (!isPhysicsRolling && selectedIndexes.length > 0) ? 'var(--crt-accent)' : 'var(--crt-text-muted)'
                   }}
                 >
                   LOCK SELECTION ({selectedIndexes.length})
@@ -248,7 +248,7 @@ export function GamePlayView({
               flexDirection: 'column',
               alignItems: 'center',
               justifyContent: 'center',
-              background: 'rgba(0,0,0,0.5)',
+              background: 'var(--crt-bg-card)',
               gap: '12px',
               padding: '16px',
               position: 'relative'
@@ -315,7 +315,7 @@ export function GamePlayView({
                             width: '45px',
                             height: '45px',
                             border: `2px solid ${diceBorder}`,
-                            background: val ? 'rgba(0, 255, 102, 0.05)' : 'rgba(0, 0, 0, 0.6)',
+                            background: val ? 'var(--crt-bg-card)' : 'var(--crt-bg-solid)',
                             boxShadow: diceGlow,
                             borderRadius: '4px',
                             display: 'flex',
@@ -399,7 +399,7 @@ export function GamePlayView({
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              background: 'rgba(0,0,0,0.5)'
+              background: 'var(--crt-bg-card)'
             }}>
               <span>Waiting for {activePlayer?.name} to shootout...</span>
             </div>
@@ -410,8 +410,8 @@ export function GamePlayView({
       {/* 4. Game Over View */}
       {room.gameState === 'GAME_OVER' && (() => {
         const hasAccepted = room.rematch?.acceptedPlayers.includes(myUserId);
-        const accentColor = preset === 'amber' ? '#ffb000' : '#00ff66';
-        const glowShadow = preset === 'amber' ? '0 0 8px rgba(255, 176, 0, 0.8)' : '0 0 8px rgba(0, 255, 102, 0.8)';
+        const accentColor = 'var(--crt-accent)';
+        const glowShadow = 'var(--crt-accent-glow)';
         
         return (
           <div style={{
@@ -422,8 +422,8 @@ export function GamePlayView({
             padding: '24px',
             border: `2px solid ${accentColor}`,
             borderRadius: '4px',
-            background: `rgba(${preset === 'amber' ? '255, 176, 0' : '0, 255, 102'}, 0.05)`,
-            boxShadow: `0 0 15px rgba(${preset === 'amber' ? '255, 176, 0' : '0, 255, 102'}, 0.25)`,
+            background: 'var(--crt-bg-card)',
+            boxShadow: 'var(--crt-glow-strong)',
             width: '100%',
             boxSizing: 'border-box'
           }}>
@@ -473,7 +473,7 @@ export function GamePlayView({
                   display: 'flex',
                   flexDirection: 'column',
                   alignItems: 'center',
-                  background: 'rgba(0,0,0,0.6)',
+                  background: 'var(--crt-bg-solid)',
                   border: `1px solid ${accentColor}`,
                   borderRadius: '4px',
                   padding: '12px',
@@ -501,8 +501,8 @@ export function GamePlayView({
                     onClick={onInitiateRematch} 
                     className="btn-retro"
                     style={{ 
-                      borderColor: '#00ff66', 
-                      color: '#00ff66',
+                      borderColor: 'var(--crt-accent)', 
+                      color: 'var(--crt-accent)',
                       fontFamily: 'Press Start 2P, monospace',
                       fontSize: '0.75rem',
                       width: '100%',
@@ -515,11 +515,11 @@ export function GamePlayView({
                   <div style={{
                     fontFamily: 'Press Start 2P, monospace',
                     fontSize: '0.6rem',
-                    color: '#00ff66',
-                    textShadow: '0 0 6px #00ff66',
+                    color: 'var(--crt-accent)',
+                    textShadow: 'var(--crt-accent-glow)',
                     padding: '8px',
                     textAlign: 'center',
-                    border: '1px dashed #00ff66',
+                    border: '1px dashed var(--crt-accent)',
                     width: '100%',
                     boxSizing: 'border-box',
                     animation: 'pulse 1.5s infinite'
@@ -537,7 +537,7 @@ export function GamePlayView({
                   fontSize: '0.9rem',
                   fontFamily: 'VT323, monospace',
                   textAlign: 'left',
-                  background: 'rgba(0,0,0,0.3)',
+                  background: 'var(--crt-bg-soft)',
                   padding: '8px 12px',
                   borderRadius: '4px',
                   border: '1px solid var(--crt-border-muted)'
@@ -551,7 +551,7 @@ export function GamePlayView({
                       <div key={p.id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1.15rem' }}>
                         <span>{p.name} {p.id === myUserId && '(YOU)'}</span>
                         {ready ? (
-                          <span style={{ color: '#00ff66', fontWeight: 'bold' }}>[READY]</span>
+                          <span style={{ color: 'var(--crt-accent)', fontWeight: 'bold' }}>[READY]</span>
                         ) : (
                           <span style={{ color: 'var(--crt-text-muted)', animation: 'pulse 1s infinite' }}>[DECIDING...]</span>
                         )}
@@ -595,6 +595,6 @@ export function GamePlayView({
 }
 
 function isConnectedColor(gameState: string) {
-  return gameState === 'LOBBY' ? 'var(--crt-text-secondary)' : '#00ff66';
+  return gameState === 'LOBBY' ? 'var(--crt-text-secondary)' : 'var(--crt-accent)';
 }
 export default GamePlayView;

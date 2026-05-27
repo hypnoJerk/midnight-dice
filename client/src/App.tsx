@@ -317,12 +317,12 @@ function GameAppInner() {
                     onChange={(e) => setUsernameInput(e.target.value.toUpperCase())}
                     disabled={isAuthenticating}
                     style={{
-                      background: 'rgba(0,0,0,0.8)',
+                      background: 'var(--crt-bg-solid)',
                       border: '2px solid var(--crt-border-muted)',
                       borderRadius: '4px',
                       padding: '12px',
                       color: 'var(--crt-text)',
-                      boxShadow: 'inset 0 0 10px rgba(0,0,0,0.9)'
+                      boxShadow: 'var(--crt-shadow-inset)'
                     }}
                   />
                 </div>
@@ -338,12 +338,12 @@ function GameAppInner() {
                     onChange={(e) => setPasswordInput(e.target.value)}
                     disabled={isAuthenticating}
                     style={{
-                      background: 'rgba(0,0,0,0.8)',
+                      background: 'var(--crt-bg-solid)',
                       border: '2px solid var(--crt-border-muted)',
                       borderRadius: '4px',
                       padding: '12px',
                       color: 'var(--crt-text)',
-                      boxShadow: 'inset 0 0 10px rgba(0,0,0,0.9)',
+                      boxShadow: 'var(--crt-shadow-inset)',
                       letterSpacing: '0.1em'
                     }}
                   />
@@ -416,7 +416,7 @@ function GameAppInner() {
                 </div>
 
                 <div style={{
-                  background: 'rgba(0, 0, 0, 0.4)',
+                  background: 'var(--crt-bg-card)',
                   border: '1px dashed var(--crt-border-muted)',
                   padding: '12px 16px',
                   borderRadius: '4px',
@@ -468,7 +468,7 @@ function GameAppInner() {
                       value={roomCode}
                       onChange={(e) => setRoomCode(e.target.value.toUpperCase())}
                       style={{
-                        background: 'rgba(0, 0, 0, 0.9)',
+                        background: 'var(--crt-bg-solid)',
                         border: roomCode.length === 4 
                           ? '2px solid var(--crt-border)' 
                           : '2px solid var(--crt-text-secondary)',
@@ -479,8 +479,8 @@ function GameAppInner() {
                         fontSize: '1.25rem',
                         letterSpacing: '0.25em',
                         boxShadow: roomCode.length === 4
-                          ? '0 0 15px var(--crt-border), inset 0 0 10px rgba(0,0,0,0.9)'
-                          : 'inset 0 0 10px rgba(0,0,0,0.9)',
+                          ? '0 0 15px var(--crt-border), var(--crt-shadow-inset)'
+                          : 'var(--crt-shadow-inset)',
                         transition: 'var(--transition-smooth)'
                       }}
                     />
@@ -654,7 +654,7 @@ function GameAppInner() {
               flexDirection: 'column',
               alignItems: 'center',
               gap: '12px',
-              background: 'rgba(0, 0, 0, 0.6)',
+              background: 'var(--crt-bg-card)',
               border: '1px dashed var(--crt-border-muted)',
               padding: '24px 40px',
               borderRadius: '4px'
@@ -759,7 +759,7 @@ function GameAppInner() {
               flexDirection: 'column',
               alignItems: 'center',
               gap: '12px',
-              background: 'rgba(0, 0, 0, 0.6)',
+              background: 'var(--crt-bg-card)',
               border: '1px dashed var(--crt-border-muted)',
               padding: '24px 40px',
               borderRadius: '4px'

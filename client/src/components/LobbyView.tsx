@@ -58,9 +58,8 @@ export function LobbyView({ room, myUserId, onStartGame, onLeaveRoom }: LobbyVie
                 padding: '6px 12px',
                 border: '1px solid var(--crt-border-muted)',
                 borderRadius: '4px',
-                background: 'rgba(0,0,0,0.3)'
-              }}
-            >
+                background: 'var(--crt-bg-soft)'
+              }}>
               <span>{p.name} {p.id === myUserId && '(YOU)'}</span>
               {p.isHost ? (
                 <span style={{ color: 'var(--crt-text-secondary)' }}>[HOST]</span>
