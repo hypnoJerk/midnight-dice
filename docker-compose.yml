@@ -13,6 +13,11 @@ services:
       - "${DB_PORT:-5433}:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d midnight_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   server:
     build:
@@ -33,7 +38,8 @@ services:
       - /app/node_modules
       - ./shared:/shared
     depends_on:
-      - db
+      db:
+        condition: service_healthy
 
   client:
     build:
