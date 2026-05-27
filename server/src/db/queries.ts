@@ -136,3 +136,16 @@ export async function createUser(username: string, passwordHash: string): Promis
     .returning();
   return inserted;
 }
+
+/**
+ * Retrieves a user record by their unique primary key UUID.
+ */
+export async function getUserById(id: string): Promise<User | undefined> {
+  const [user] = await db
+    .select()
+    .from(users)
+    .where(eq(users.id, id))
+    .limit(1);
+  return user;
+}
+

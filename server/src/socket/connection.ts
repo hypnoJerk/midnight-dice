@@ -1,6 +1,7 @@
 import { Server, Socket } from 'socket.io';
 import { RoomManager } from '../game/roomManager.js';
 import { Room } from 'shared/types.js';
+import { getUserById } from '../db/queries.js';
 
 /**
  * Builds the standard sync state payload to broadcast.
@@ -27,27 +28,42 @@ export function initializeSockets(io: Server, roomManager: RoomManager) {
     const { userId, roomCode } = socket.handshake.auth as { userId?: string; roomCode?: string };
     
     if (userId) {
-      roomManager.registerSocket(socket.id, userId);
-      
-      // If reconnecting to an active room
-      if (roomCode) {
-        const room = roomManager.getRoom(roomCode);
-        if (room) {
-          const player = room.players.find(p => p.id === userId);
-          if (player) {
-            player.socketId = socket.id;
-            socket.join(roomCode.toUpperCase());
-            io.to(roomCode.toUpperCase()).emit('room:sync', buildSyncPayload(room));
+      getUserById(userId).then(user => {
+        if (!user) {
+          socket.emit('auth:invalid', { reason: 'session_expired' });
+          return;
+        }
+
+        roomManager.registerSocket(socket.id, userId);
+        
+        // If reconnecting to an active room
+        if (roomCode) {
+          const room = roomManager.getRoom(roomCode);
+          if (room) {
+            const player = room.players.find(p => p.id === userId);
+            if (player) {
+              player.socketId = socket.id;
+              socket.join(roomCode.toUpperCase());
+              io.to(roomCode.toUpperCase()).emit('room:sync', buildSyncPayload(room));
+            }
           }
         }
-      }
+      }).catch(err => {
+        console.error('Error verifying user on handshake:', err);
+      });
     }
 
     // 1. Create Room
-    socket.on('room:create', ({ userId, hostName }: { userId: string; hostName: string }) => {
+    socket.on('room:create', async ({ userId, hostName }: { userId: string; hostName: string }) => {
       try {
         if (!userId || !hostName) {
           return socket.emit('error', 'Missing userId or hostName');
+        }
+
+        // Validate user exists in DB
+        const user = await getUserById(userId);
+        if (!user) {
+          return socket.emit('auth:invalid', { reason: 'session_expired' });
         }
 
         const room = roomManager.createRoom(userId, hostName);
@@ -66,10 +82,16 @@ export function initializeSockets(io: Server, roomManager: RoomManager) {
     });
 
     // 2. Join Room
-    socket.on('room:join', ({ userId, roomCode, playerName }: { userId: string; roomCode: string; playerName: string }) => {
+    socket.on('room:join', async ({ userId, roomCode, playerName }: { userId: string; roomCode: string; playerName: string }) => {
       try {
         if (!userId || !roomCode || !playerName) {
           return socket.emit('error', 'Missing fields to join room');
+        }
+
+        // Validate user exists in DB
+        const user = await getUserById(userId);
+        if (!user) {
+          return socket.emit('auth:invalid', { reason: 'session_expired' });
         }
 
         const cleanCode = roomCode.toUpperCase();
@@ -88,6 +110,7 @@ export function initializeSockets(io: Server, roomManager: RoomManager) {
         socket.emit('error', err.message || 'Failed to join room');
       }
     });
+
 
     // 3. Start Game
     socket.on('game:start', () => {

@@ -91,6 +91,17 @@ export function useGame() {
       setError(errMsg);
     });
 
+    newSocket.on('auth:invalid', () => {
+      localStorage.removeItem('midnight_user_uuid');
+      localStorage.removeItem('midnight_display_name');
+      localStorage.removeItem('midnight_last_room_code');
+      setUserId('');
+      setRoom(null);
+      setDiceToRoll(null);
+      setActiveRoll(null);
+      setError('SESSION EXPIRED. PLEASE LOGIN AGAIN.');
+    });
+
     setSocket(newSocket);
 
     return () => {

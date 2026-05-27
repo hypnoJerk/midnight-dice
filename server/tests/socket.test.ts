@@ -3,6 +3,10 @@ import { initializeSockets, buildSyncPayload } from '../src/socket/connection.js
 import { RoomManager } from '../src/game/roomManager.js';
 import { Server, Socket } from 'socket.io';
 
+vi.mock('../src/db/queries.js', () => ({
+  getUserById: vi.fn((id) => Promise.resolve({ id, displayName: 'Mocked User' })),
+}));
+
 describe('Socket Coordinator Integration & Authoritative Move Validation', () => {
   let mockIo: Server;
   let roomManager: RoomManager;
@@ -41,11 +45,11 @@ describe('Socket Coordinator Integration & Authoritative Move Validation', () =>
     connectionCallback(mockSocket);
   });
 
-  it('should successfully handle room:create socket event', () => {
+  it('should successfully handle room:create socket event', async () => {
     const createCallback = registeredEvents.get('room:create');
     expect(createCallback).toBeDefined();
 
-    createCallback!({ userId: 'user-A', hostName: 'Alice' });
+    await createCallback!({ userId: 'user-A', hostName: 'Alice' });
 
     // Assert room created in RoomManager
     const room = roomManager.getRoomByUserId('user-A');
@@ -63,9 +67,9 @@ describe('Socket Coordinator Integration & Authoritative Move Validation', () =>
     }));
   });
 
-  it('should reject roll requests from non-active players', () => {
+  it('should reject roll requests from non-active players', async () => {
     const createCallback = registeredEvents.get('room:create');
-    createCallback!({ userId: 'user-A', hostName: 'Alice' });
+    await createCallback!({ userId: 'user-A', hostName: 'Alice' });
     const room = roomManager.getRoomByUserId('user-A')!;
 
     // Join player B
@@ -83,9 +87,9 @@ describe('Socket Coordinator Integration & Authoritative Move Validation', () =>
     expect(mockSocket.emit).toHaveBeenCalledWith('error', expect.stringContaining('It is not your turn'));
   });
 
-  it('should successfully process active player roll and keep selection sequence', () => {
+  it('should successfully process active player roll and keep selection sequence', async () => {
     const createCallback = registeredEvents.get('room:create');
-    createCallback!({ userId: 'user-A', hostName: 'Alice' });
+    await createCallback!({ userId: 'user-A', hostName: 'Alice' });
     const room = roomManager.getRoomByUserId('user-A')!;
 
     roomManager.startGame(room.code, 'user-A');
@@ -144,9 +148,9 @@ describe('Socket Coordinator Integration & Authoritative Move Validation', () =>
   });
 
   describe('Multiplayer Rematch Flow', () => {
-    it('should correctly initiate rematch and start a new game when all players accept', () => {
+    it('should correctly initiate rematch and start a new game when all players accept', async () => {
       const createCallback = registeredEvents.get('room:create');
-      createCallback!({ userId: 'user-A', hostName: 'Alice' });
+      await createCallback!({ userId: 'user-A', hostName: 'Alice' });
       const room = roomManager.getRoomByUserId('user-A')!;
 
       // Join player B
