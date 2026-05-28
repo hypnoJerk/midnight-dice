@@ -97,6 +97,21 @@ docker compose -f docker-compose.yml up -d --build
 ```
 Your game will now be live on Port `8080` (or `80` if you map Nginx ports in `docker-compose.yml` accordingly).
 
+### 4. Safe Server Updates (Database Preservation)
+> [!WARNING]
+> **NEVER** run `docker compose down -v` or `docker-compose down --volumes` on the production server. The `-v` flag deletes all persistent Docker volumes, including the database data (`pgdata`). This will permanently erase all leaderboard records and user accounts.
+
+To safely push updates and rebuild your containers with **minimal/zero downtime** and **zero data loss**, run this update sequence on your droplet:
+```bash
+git pull && sudo docker compose up -d --build
+```
+This automatically pulls your changes, rebuilds only the modified service images, and restarts the containers seamlessly without touching or destroying the database volume.
+
+If you ever need to perform a full stop-and-start cycle on the containers without deleting any volume data, simply omit the `-v` flag:
+```bash
+git pull && sudo docker compose down && sudo docker compose up -d --build
+```
+
 ---
 
 ## 🛰️ Advanced Shared Infrastructure Setup (Multi-Client DigitalOcean Server)

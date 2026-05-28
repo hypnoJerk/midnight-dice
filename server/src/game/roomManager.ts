@@ -428,7 +428,7 @@ export class RoomManager {
         if (winner) {
           winner.roundWins += 1;
           
-          if (winner.roundWins >= 2) {
+          if (winner.roundWins >= 3) {
             // Complete game over
             room.gameState = 'GAME_OVER';
             room.activePlayerIndex = -1;
