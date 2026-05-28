@@ -4,6 +4,7 @@ import Scoreboard from './Scoreboard.js';
 import KeepZone from './KeepZone.js';
 import DiceScene from '../canvas/DiceScene.js';
 import { useSound } from '../hooks/useSound.js';
+import { RetroDie2D } from './RetroDie2D.js';
 
 interface GamePlayViewProps {
   room: Room;
@@ -18,33 +19,6 @@ interface GamePlayViewProps {
   onLeaveRoom: () => void;
   onInitiateRematch: () => void;
   preset: 'green' | 'amber';
-}
-
-export function RetroDie2D({ value, size = 28, color = 'currentColor' }: { value: number; size?: number; color?: string }) {
-  const pips: Record<number, [number, number][]> = {
-    1: [[50, 50]],
-    2: [[25, 25], [75, 75]],
-    3: [[25, 25], [50, 50], [75, 75]],
-    4: [[25, 25], [25, 75], [75, 25], [75, 75]],
-    5: [[25, 25], [25, 75], [50, 50], [75, 25], [75, 75]],
-    6: [[25, 25], [25, 50], [25, 75], [75, 25], [75, 50], [75, 75]]
-  };
-
-  const activePips = pips[value] || [];
-
-  return (
-    <svg width={size} height={size} viewBox="0 0 100 100" style={{ display: 'block' }}>
-      {activePips.map(([cx, cy], idx) => (
-        <circle 
-          key={idx} 
-          cx={cx} 
-          cy={cy} 
-          r="9" 
-          fill={color} 
-        />
-      ))}
-    </svg>
-  );
 }
 
 export function GamePlayView({

@@ -1,5 +1,6 @@
 import React from 'react';
 import { getRunningScore } from 'shared/types.js';
+import { RetroDie2D } from './RetroDie2D.js';
 
 interface KeepZoneProps {
   keptDice: number[];
@@ -99,7 +100,7 @@ export function KeepZone({ keptDice, hasOne, hasFour, preset }: KeepZoneProps) {
                 position: 'relative'
               }}
             >
-              {val || ''}
+              {val ? <RetroDie2D value={val} size={32} /> : ''}
               
               {/* Subtle visual marker for Q-dice */}
               {isHighlighted && (
