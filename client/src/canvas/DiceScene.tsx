@@ -48,6 +48,16 @@ function CameraController({
   const currentTarget = useRef(new THREE.Vector3(target[0], target[1], target[2]));
   const currentPosition = useRef(new THREE.Vector3(x, y, z));
 
+  // Zero-allocation references for hot path in frame loop
+  const tempCamera = useRef(new THREE.PerspectiveCamera());
+  const tempProjMatrix = useRef(new THREE.Matrix4());
+  const tempVec = useRef(new THREE.Vector3());
+  const tempCentroid = useRef(new THREE.Vector3());
+  const tempLookAt = useRef(new THREE.Vector3());
+  const tempProposed = useRef(new THREE.Vector3());
+  const tempDir = useRef(new THREE.Vector3());
+  const tempLocal = useRef(new THREE.Vector3());
+
   // Sync with base external configurations (e.g. from Sandbox calibration sliders)
   useEffect(() => {
     currentPosition.current.set(x, y, z);
@@ -59,43 +69,42 @@ function CameraController({
   }, [camera, x, y, z, fov, target[0], target[1], target[2]]);
 
   useFrame(() => {
-    const positions: THREE.Vector3[] = [];
+    let targetLookAt = tempLookAt.current.set(target[0], target[1], target[2]);
+    let targetCamPos = tempProposed.current.set(x, y, z);
+
+    let activeDiceCount = 0;
+    const centroid = tempCentroid.current.set(0, 0, 0);
+    let minX = Infinity, maxX = -Infinity;
+    let minZ = Infinity, maxZ = -Infinity;
+
     Object.values(diceRefs.current).forEach(ref => {
       if (ref?.current) {
-        const p = new THREE.Vector3();
+        const p = tempVec.current;
         ref.current.getWorldPosition(p);
-        positions.push(p);
+        centroid.add(p);
+
+        if (p.x < minX) minX = p.x;
+        if (p.x > maxX) maxX = p.x;
+        if (p.z < minZ) minZ = p.z;
+        if (p.z > maxZ) maxZ = p.z;
+
+        activeDiceCount++;
       }
     });
 
-    let targetLookAt = new THREE.Vector3(target[0], target[1], target[2]);
-    let targetCamPos = new THREE.Vector3(x, y, z);
-
-    if (positions.length > 0) {
+    if (activeDiceCount > 0) {
       // 1. Compute Centroid (center of mass of all active dice)
-      const centroid = new THREE.Vector3();
-      positions.forEach(p => centroid.add(p));
-      centroid.divideScalar(positions.length);
+      centroid.divideScalar(activeDiceCount);
 
       // Target lookAt point focuses on the centroid at floor level
       targetLookAt.set(centroid.x, 0.0, centroid.z);
 
       // 2. Compute Spread (maximum bounding size)
-      let minX = Infinity, maxX = -Infinity;
-      let minZ = Infinity, maxZ = -Infinity;
-      positions.forEach(p => {
-        if (p.x < minX) minX = p.x;
-        if (p.x > maxX) maxX = p.x;
-        if (p.z < minZ) minZ = p.z;
-        if (p.z > maxZ) maxZ = p.z;
-      });
-
       const dx = maxX - minX;
       const dz = maxZ - minZ;
       const spread = Math.max(dx, dz);
 
-      // 3. Dynamic heights and depths
-      // For clustered dice (spread < 3.0), use base seating height. For spread out dice, scale up.
+      // 3. Dynamic heights and depths (base spread padding)
       const spreadOffset = Math.max(0, spread - 3.0);
       const heightPadding = spreadOffset * 0.95; // increased from 0.75 for absolute frustum safety
       
@@ -105,7 +114,52 @@ function CameraController({
       // Center camera X on centroid with a gentle horizontal damping
       const dynamicX = centroid.x * 0.45;
 
-      targetCamPos.set(dynamicX, dynamicY, dynamicZ);
+      const proposedCamPos = tempProposed.current.set(dynamicX, dynamicY, dynamicZ);
+
+      // 4. Mathematically check perspective frustum bounds for absolute screen safety
+      const cam = tempCamera.current;
+      const persCamera = camera as THREE.PerspectiveCamera;
+      cam.fov = persCamera.fov || fov;
+      cam.aspect = persCamera.aspect || 1;
+      cam.near = persCamera.near;
+      cam.far = persCamera.far;
+      cam.position.copy(proposedCamPos);
+      cam.lookAt(targetLookAt);
+      cam.updateMatrixWorld();
+
+      const projMatrix = tempProjMatrix.current.copy(cam.matrixWorldInverse);
+      const tanHalfFov = Math.tan(((persCamera.fov || fov) * Math.PI) / 360);
+      const aspect = cam.aspect;
+      const safetyMargin = 0.82; // Safe bounding limit (82% of viewport size)
+
+      let maxAdditionalDepth = 0;
+
+      Object.values(diceRefs.current).forEach(ref => {
+        if (ref?.current) {
+          const p = tempVec.current;
+          ref.current.getWorldPosition(p);
+
+          const localP = tempLocal.current.copy(p).applyMatrix4(projMatrix);
+          const depth = -localP.z; // Depth in front of camera
+          if (depth > 0) {
+            const reqDepthY = Math.abs(localP.y) / (safetyMargin * tanHalfFov);
+            const reqDepthX = Math.abs(localP.x) / (safetyMargin * tanHalfFov * aspect);
+            const reqDepth = Math.max(reqDepthX, reqDepthY);
+            const diff = reqDepth - depth;
+            if (diff > maxAdditionalDepth) {
+              maxAdditionalDepth = diff;
+            }
+          }
+        }
+      });
+
+      // Move camera back along its line of sight if any die falls outside safe margins
+      if (maxAdditionalDepth > 0) {
+        const dir = tempDir.current.subVectors(proposedCamPos, targetLookAt).normalize();
+        targetCamPos.copy(proposedCamPos).addScaledVector(dir, maxAdditionalDepth);
+      } else {
+        targetCamPos.copy(proposedCamPos);
+      }
     }
 
     // Cinematic tracking catch-up (0.02 lerp lets camera drift elegantly behind the roll)

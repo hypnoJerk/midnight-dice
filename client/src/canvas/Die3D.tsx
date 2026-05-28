@@ -139,11 +139,11 @@ export function Die3D({ index, value, onTap, onSettle, preset, diceScale, isSele
 
   // Adjust cursor style dynamically on hover
   useEffect(() => {
-    document.body.style.cursor = hovered ? 'pointer' : 'default';
+    document.body.style.cursor = (hovered && hasSettled) ? 'pointer' : 'default';
     return () => {
       document.body.style.cursor = 'default';
     };
-  }, [hovered]);
+  }, [hovered, hasSettled]);
 
   useFrame(() => {
     if (hasSettled) return;
@@ -276,11 +276,15 @@ export function Die3D({ index, value, onTap, onSettle, preset, diceScale, isSele
           receiveShadow
           onClick={(e) => {
             e.stopPropagation(); // Stop raycast bubbling to background floor/walls
-            onTap(index);
+            if (hasSettled) {
+              onTap(index);
+            }
           }}
           onPointerOver={(e) => {
             e.stopPropagation();
-            setHovered(true);
+            if (hasSettled) {
+              setHovered(true);
+            }
           }}
           onPointerOut={(e) => {
             e.stopPropagation();

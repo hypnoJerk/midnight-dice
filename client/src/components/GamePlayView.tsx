@@ -12,7 +12,7 @@ interface GamePlayViewProps {
   activeRoll: number[] | null;
   diceToRoll: number | null;
   rollId: number;
-  submitRollResults: (dice: number[]) => void;
+  submitRollResults: (dice: number[], isStacked?: boolean) => void;
   clearActiveRoll: () => void;
   onRollDice: () => void;
   onKeepDice: (diceIndexes: number[]) => void;
