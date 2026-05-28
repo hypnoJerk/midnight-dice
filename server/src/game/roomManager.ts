@@ -252,8 +252,8 @@ export class RoomManager {
     }
 
     if (room.gameState === 'PLAYING') {
-      // Standard roll rules
-      if (activePlayer.diceActive.length > 0) {
+      // Standard roll rules (suspended if the current roll is stacked, forcing a reroll)
+      if (activePlayer.diceActive.length > 0 && !activePlayer.isCurrentRollStacked) {
         throw new Error('You must set aside/keep at least one die before rolling again');
       }
       
@@ -264,15 +264,17 @@ export class RoomManager {
 
       activePlayer.diceActive = [];
       activePlayer.rollsCount += 1;
+      activePlayer.isCurrentRollStacked = false; // Reset stacked state once new roll begins
 
       return remainingDice;
     } else if (room.gameState === 'SHOOTOUT') {
-      // Shootout roll rules
-      if (activePlayer.shootoutScore !== undefined) {
+      // Shootout roll rules (suspended if the current roll is stacked, forcing a reroll)
+      if (activePlayer.shootoutScore !== undefined && !activePlayer.isCurrentRollStacked) {
         throw new Error('You have already rolled in this shootout round');
       }
 
       activePlayer.rollsCount += 1;
+      activePlayer.isCurrentRollStacked = false; // Reset stacked state once new roll begins
 
       return 6;
     } else {
@@ -476,7 +478,7 @@ export class RoomManager {
         if (winner) {
           winner.roundWins += 1;
           
-          if (winner.roundWins >= 2) {
+          if (winner.roundWins >= 3) {
             // Complete game over
             room.gameState = 'GAME_OVER';
             room.activePlayerIndex = -1;
@@ -542,7 +544,7 @@ export class RoomManager {
         if (winner) {
           winner.roundWins += 1;
           
-          if (winner.roundWins >= 2) {
+          if (winner.roundWins >= 3) {
             // Complete game over
             room.gameState = 'GAME_OVER';
             room.activePlayerIndex = -1;

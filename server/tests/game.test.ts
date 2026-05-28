@@ -129,8 +129,8 @@ describe('Game Engine Scoring & Qualification Rules', () => {
     });
   });
 
-  describe('RoomManager Best of 3 Rounds Progression', () => {
-    it('should correctly transition through multiple rounds and declare match winner on 2 wins', () => {
+  describe('RoomManager First to 3 Rounds Progression', () => {
+    it('should correctly transition through multiple rounds and declare match winner on 3 wins', () => {
       const manager = new RoomManager();
 
       // Host creates a room
@@ -177,9 +177,33 @@ describe('Game Engine Scoring & Qualification Rules', () => {
         isDQ: false
       };
 
-      // Complete transition -> should trigger GAME_OVER since Alice reaches 2 round-wins!
+      // Complete transition -> should trigger round transition since Alice has 2 wins, but needs 3 to win match
       manager.completeTurnTransition(room.code);
       expect(room.players[0].roundWins).toBe(2);
+      expect(room.gameState).toBe('PLAYING');
+      expect(room.roundTransition).toBeDefined();
+      expect(room.roundTransition?.roundNumber).toBe(2);
+
+      // Complete round transition to round 3
+      manager.completeRoundTransition(room.code);
+      expect(room.currentRound).toBe(3);
+      expect(room.roundTransition).toBeNull();
+      expect(room.players[0].score).toBe(0); // Reset for new round
+      expect(room.players[0].roundWins).toBe(2); // Keeps round-win count!
+
+      // Simulate Alice winning round 3
+      room.players[0].score = 24;
+      room.players[0].diceKept = [1, 4, 6, 6, 6, 6];
+      room.players[0].isDQ = false;
+      room.turnTransition = {
+        playerName: 'Alice',
+        score: 24,
+        isDQ: false
+      };
+
+      // Complete transition -> should trigger GAME_OVER since Alice reaches 3 round-wins!
+      manager.completeTurnTransition(room.code);
+      expect(room.players[0].roundWins).toBe(3);
       expect(room.gameState).toBe('GAME_OVER');
       expect(room.winners).toEqual(['user-host']);
     });
@@ -287,6 +311,22 @@ describe('Game Engine Scoring & Qualification Rules', () => {
 
       // 2. Keep some dice
       manager.keepActivePlayer(room.code, 'user-alice', [0, 1]); // keep first two dice
+      expect(room.players[0].isCurrentRollStacked).toBe(false);
+    });
+
+    it('should bypass the active dice verification block if isCurrentRollStacked is true', () => {
+      const manager = new RoomManager();
+      const room = manager.createRoom('user-alice', 'Alice');
+      manager.startGame(room.code, 'user-alice');
+
+      // 1. Submit a stacked roll
+      manager.submitRollActivePlayer(room.code, 'user-alice', [1, 2, 3, 4, 5, 6], true);
+      expect(room.players[0].isCurrentRollStacked).toBe(true);
+
+      // 2. Attempting to roll again should be allowed (normally blocked because diceActive has length > 0)
+      expect(() => manager.rollActivePlayer(room.code, 'user-alice')).not.toThrow();
+
+      // 3. Rolling should reset isCurrentRollStacked to false
       expect(room.players[0].isCurrentRollStacked).toBe(false);
     });
   });
