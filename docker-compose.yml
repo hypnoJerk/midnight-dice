@@ -27,7 +27,7 @@ services:
     restart: always
     environment:
       NODE_ENV: ${NODE_ENV:-development}
-      DATABASE_URL: ${DATABASE_URL_DOCKER:-postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/${POSTGRES_DB:-midnight_db}}
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/${POSTGRES_DB:-midnight_db}
       PORT: 3001
       PURGE_DB: ${PURGE_DB:-false}
       RESET_DB: ${RESET_DB:-false}
