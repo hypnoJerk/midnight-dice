@@ -112,6 +112,23 @@ If you ever need to perform a full stop-and-start cycle on the containers withou
 git pull && sudo docker compose down && sudo docker compose up -d --build
 ```
 
+### 5. Port Exposure Hardening (Security Recommendation)
+To ensure Docker container ports are not exposed to the public internet, this project's default `docker-compose.yml` configures all exposed ports (Nginx gateway on port `8080` and Postgres on port `5433`) to bind exclusively to the host's loopback interface (`127.0.0.1`). 
+
+As a defense-in-depth security measure, it is highly recommended to configure the Docker daemon on the server to default to `127.0.0.1` for all published ports:
+
+1. Create or edit `/etc/docker/daemon.json` on the server host:
+   ```json
+   {
+     "ip": "127.0.0.1"
+   }
+   ```
+2. Restart the Docker service to apply the configuration:
+   ```bash
+   sudo systemctl restart docker
+   ```
+This prevents accidental exposure of any other containers spun up on the server.
+
 ---
 
 ## 🛰️ Advanced Shared Infrastructure Setup (Multi-Client DigitalOcean Server)

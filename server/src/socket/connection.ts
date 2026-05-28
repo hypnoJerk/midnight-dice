@@ -2,6 +2,7 @@ import { Server, Socket } from 'socket.io';
 import { RoomManager } from '../game/roomManager.js';
 import { Room } from 'shared/types.js';
 import { getUserById } from '../db/queries.js';
+import { validateUsername, sanitizeText, validateUUID, validateRoomCode } from '../utils/security.js';
 
 /**
  * Builds the standard sync state payload to broadcast.
@@ -20,6 +21,10 @@ export function buildSyncPayload(room: Room) {
     roundTransition: room.roundTransition || null,
     rematch: room.rematch || null
   };
+}
+
+function isValidPayload(roomCode: string, userId: string): boolean {
+  return validateRoomCode(roomCode) && validateUUID(userId);
 }
 
 export function initializeSockets(io: Server, roomManager: RoomManager) {
@@ -60,13 +65,22 @@ export function initializeSockets(io: Server, roomManager: RoomManager) {
           return socket.emit('error', 'Missing userId or hostName');
         }
 
+        if (!validateUUID(userId)) {
+          return socket.emit('error', 'Invalid userId format');
+        }
+
+        if (!validateUsername(hostName)) {
+          return socket.emit('error', 'Host name can only contain letters, numbers, spaces, and hyphens');
+        }
+
         // Validate user exists in DB
         const user = await getUserById(userId);
         if (!user) {
           return socket.emit('auth:invalid', { reason: 'session_expired' });
         }
 
-        const room = roomManager.createRoom(userId, hostName);
+        const cleanHostName = sanitizeText(hostName).trim();
+        const room = roomManager.createRoom(userId, cleanHostName);
         const player = room.players.find(p => p.id === userId);
         if (player) {
           player.socketId = socket.id;
@@ -88,6 +102,18 @@ export function initializeSockets(io: Server, roomManager: RoomManager) {
           return socket.emit('error', 'Missing fields to join room');
         }
 
+        if (!validateUUID(userId)) {
+          return socket.emit('error', 'Invalid userId format');
+        }
+
+        if (!validateRoomCode(roomCode)) {
+          return socket.emit('error', 'Invalid roomCode format');
+        }
+
+        if (!validateUsername(playerName)) {
+          return socket.emit('error', 'Player name can only contain letters, numbers, spaces, and hyphens');
+        }
+
         // Validate user exists in DB
         const user = await getUserById(userId);
         if (!user) {
@@ -95,7 +121,8 @@ export function initializeSockets(io: Server, roomManager: RoomManager) {
         }
 
         const cleanCode = roomCode.toUpperCase();
-        const room = roomManager.joinRoom(userId, playerName, cleanCode);
+        const cleanPlayerName = sanitizeText(playerName).trim();
+        const room = roomManager.joinRoom(userId, cleanPlayerName, cleanCode);
         const player = room.players.find(p => p.id === userId);
         if (player) {
           player.socketId = socket.id;
@@ -140,7 +167,10 @@ export function initializeSockets(io: Server, roomManager: RoomManager) {
     // Custom Start helper mapping directly via roomCode and userId payloads for clean client hookup
     socket.on('room:start', ({ roomCode, userId }: { roomCode: string; userId: string }) => {
       try {
-        const room = roomManager.startGame(roomCode, userId);
+        if (!isValidPayload(roomCode, userId)) {
+          return socket.emit('error', 'Invalid roomCode or userId format');
+        }
+        const room = roomManager.startGame(roomCode.toUpperCase(), userId);
         io.to(roomCode.toUpperCase()).emit('room:sync', buildSyncPayload(room));
       } catch (err: any) {
         socket.emit('error', err.message || 'Failed to start game');
@@ -150,8 +180,11 @@ export function initializeSockets(io: Server, roomManager: RoomManager) {
     // 4. Turn Roll (Starts the physical roll)
     socket.on('turn:roll', ({ roomCode, userId }: { roomCode: string; userId: string }) => {
       try {
-        const diceCount = roomManager.rollActivePlayer(roomCode, userId);
-        const room = roomManager.getRoom(roomCode);
+        if (!isValidPayload(roomCode, userId)) {
+          return socket.emit('error', 'Invalid roomCode or userId format');
+        }
+        const diceCount = roomManager.rollActivePlayer(roomCode.toUpperCase(), userId);
+        const room = roomManager.getRoom(roomCode.toUpperCase());
         
         if (room) {
           // Tell the active player's client to start the physical roll of `diceCount` dice
@@ -167,7 +200,10 @@ export function initializeSockets(io: Server, roomManager: RoomManager) {
     // 4b. Turn Roll Settled (Submits physical results after physics settles)
     socket.on('turn:roll:settled', ({ roomCode, userId, dice, isStacked }: { roomCode: string; userId: string; dice: number[]; isStacked?: boolean }) => {
       try {
-        const room = roomManager.submitRollActivePlayer(roomCode, userId, dice, isStacked);
+        if (!isValidPayload(roomCode, userId)) {
+          return socket.emit('error', 'Invalid roomCode or userId format');
+        }
+        const room = roomManager.submitRollActivePlayer(roomCode.toUpperCase(), userId, dice, isStacked);
         
         // Send confirmed rolled dice faces directly to active player
         socket.emit('roll:result', { dice });
@@ -207,7 +243,10 @@ export function initializeSockets(io: Server, roomManager: RoomManager) {
     // 5. Turn Keep
     socket.on('turn:keep', ({ roomCode, userId, diceIndexes }: { roomCode: string; userId: string; diceIndexes: number[] }) => {
       try {
-        const room = roomManager.keepActivePlayer(roomCode, userId, diceIndexes);
+        if (!isValidPayload(roomCode, userId)) {
+          return socket.emit('error', 'Invalid roomCode or userId format');
+        }
+        const room = roomManager.keepActivePlayer(roomCode.toUpperCase(), userId, diceIndexes);
         io.to(roomCode.toUpperCase()).emit('room:sync', buildSyncPayload(room));
 
         if (room.turnTransition) {
@@ -243,10 +282,10 @@ export function initializeSockets(io: Server, roomManager: RoomManager) {
     // 5b. Room Rematch
     socket.on('room:rematch:initiate', ({ roomCode, userId }: { roomCode: string; userId: string }) => {
       try {
-        if (!roomCode || !userId) {
-          return socket.emit('error', 'Missing roomCode or userId for rematch');
+        if (!isValidPayload(roomCode, userId)) {
+          return socket.emit('error', 'Invalid roomCode or userId format');
         }
-        const updatedRoom = roomManager.initiateOrAcceptRematch(roomCode, userId, io);
+        const updatedRoom = roomManager.initiateOrAcceptRematch(roomCode.toUpperCase(), userId, io);
         io.to(roomCode.toUpperCase()).emit('room:sync', buildSyncPayload(updatedRoom));
       } catch (err: any) {
         socket.emit('error', err.message || 'Failed to process rematch request');
@@ -256,8 +295,8 @@ export function initializeSockets(io: Server, roomManager: RoomManager) {
     // 5c. Room Leave
     socket.on('room:leave', ({ roomCode, userId }: { roomCode: string; userId: string }) => {
       try {
-        if (!roomCode || !userId) {
-          return socket.emit('error', 'Missing roomCode or userId to leave');
+        if (!isValidPayload(roomCode, userId)) {
+          return socket.emit('error', 'Invalid roomCode or userId format');
         }
         const code = roomManager.leaveRoom(userId, io);
         if (code) {

@@ -9,6 +9,7 @@ import { RoomManager } from './game/roomManager.js';
 import { initializeSockets } from './socket/connection.js';
 import { getLeaderboard, getRecentMatches, recordMatch, upsertUser, getUserByUsername, createUser } from './db/queries.js';
 import { hashPassword, verifyPassword } from './db/auth.js';
+import { validateUsername, sanitizeText, validateUUID } from './utils/security.js';
 
 // Resolve directory name in ESM
 const __filename = fileURLToPath(import.meta.url);
@@ -93,12 +94,18 @@ app.post('/api/auth/register', async (req, res) => {
     return res.status(400).json({ error: 'Missing username or password' });
   }
 
+  if (!validateUsername(username)) {
+    return res.status(400).json({
+      error: 'Username can only contain letters, numbers, spaces, hyphens, and underscores (max 30 characters)'
+    });
+  }
+
+  if (typeof password !== 'string' || password.length < 6) {
+    return res.status(400).json({ error: 'Password must be at least 6 characters long' });
+  }
+
   try {
     const cleanUsername = username.trim().toUpperCase();
-    if (!cleanUsername) {
-      return res.status(400).json({ error: 'Invalid username' });
-    }
-
     const existingUser = await getUserByUsername(cleanUsername);
     if (existingUser) {
       return res.status(409).json({ error: 'Username already exists' });
@@ -117,6 +124,10 @@ app.post('/api/auth/login', async (req, res) => {
   const { username, password } = req.body;
   if (!username || !password) {
     return res.status(400).json({ error: 'Missing username or password' });
+  }
+
+  if (!validateUsername(username)) {
+    return res.status(400).json({ error: 'Invalid username format' });
   }
 
   try {
@@ -144,8 +155,19 @@ app.post('/api/users/register', async (req, res) => {
     return res.status(400).json({ error: 'Missing userId or displayName' });
   }
 
+  if (!validateUUID(userId)) {
+    return res.status(400).json({ error: 'Invalid userId format' });
+  }
+
+  if (!validateUsername(displayName)) {
+    return res.status(400).json({
+      error: 'Display name can only contain letters, numbers, spaces, hyphens, and underscores (max 30 characters)'
+    });
+  }
+
   try {
-    const user = await upsertUser(userId, displayName);
+    const sanitizedDisplayName = sanitizeText(displayName).trim().toUpperCase();
+    const user = await upsertUser(userId, sanitizedDisplayName);
     res.status(200).json(user);
   } catch (err: any) {
     res.status(500).json({ error: err.message || 'Failed to register identity' });
