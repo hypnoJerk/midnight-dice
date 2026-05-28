@@ -200,80 +200,105 @@ function GameAppInner() {
       {showSettings && (
         <div className="settings-modal-overlay" onClick={() => setShowSettings(false)}>
           <div className="settings-modal terminal-panel" onClick={(e) => e.stopPropagation()}>
-            <h2 style={{ fontSize: '1.8rem', marginBottom: '20px', textAlign: 'center', color: 'var(--crt-text)', textShadow: 'var(--crt-glow-strong)' }}>
+            <h2 style={{ fontSize: '1.8rem', marginBottom: '16px', textAlign: 'center', color: 'var(--crt-text)', textShadow: 'var(--crt-glow-strong)' }}>
               SYSTEM CONFIG
             </h2>
             
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px' }}>
-                <span style={{ fontSize: '1.1rem', color: 'var(--crt-text-secondary)' }}>THEME:</span>
-                <button onClick={() => { playClick(); toggleTheme(); }} className="btn-retro" style={{ fontSize: '0.9rem', width: '130px', padding: '8px' }}>
-                  {theme === 'dark' ? 'LIGHT' : 'DARK'}
-                </button>
-              </div>
-              
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px' }}>
-                <span style={{ fontSize: '1.1rem', color: 'var(--crt-text-secondary)' }}>PRESET:</span>
-                <button onClick={() => { playClick(); togglePreset(); }} className="btn-retro" style={{ fontSize: '0.9rem', width: '130px', padding: '8px' }}>
-                  {preset === 'green' ? 'AMBER' : 'GREEN'}
-                </button>
-              </div>
-              
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px' }}>
-                <span style={{ fontSize: '1.1rem', color: 'var(--crt-text-secondary)' }}>AUDIO:</span>
-                <button onClick={() => { playClick(); toggleMute(); }} className="btn-retro" style={{ fontSize: '0.9rem', width: '130px', padding: '8px' }}>
-                  {isMuted ? 'UNMUTE' : 'MUTE'}
-                </button>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              {/* Section 1: Themes / Visuals */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                <div style={{ fontSize: '0.65rem', color: 'var(--crt-text-muted)', fontFamily: 'Press Start 2P, monospace', marginBottom: '4px' }}>
+                  // DISPLAY VISUALS
+                </div>
+                
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px' }}>
+                  <span style={{ fontSize: '1.1rem', color: 'var(--crt-text-secondary)' }}>THEME:</span>
+                  <button onClick={() => { playClick(); toggleTheme(); }} className="btn-retro" style={{ fontSize: '0.9rem', width: '130px', padding: '8px' }}>
+                    {theme === 'dark' ? 'LIGHT' : 'DARK'}
+                  </button>
+                </div>
+                
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px' }}>
+                  <span style={{ fontSize: '1.1rem', color: 'var(--crt-text-secondary)' }}>PRESET:</span>
+                  <button onClick={() => { playClick(); togglePreset(); }} className="btn-retro" style={{ fontSize: '0.9rem', width: '130px', padding: '8px' }}>
+                    {preset === 'green' ? 'AMBER' : 'GREEN'}
+                  </button>
+                </div>
               </div>
 
-              {/* logout button */}
+              {/* Separator between Themes and the rest */}
+              <hr style={{ border: '0', borderTop: '1px dashed var(--crt-border-muted)', margin: '4px 0' }} />
+
+              {/* Section 2: General Controls */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                <div style={{ fontSize: '0.65rem', color: 'var(--crt-text-muted)', fontFamily: 'Press Start 2P, monospace', marginBottom: '4px' }}>
+                  // SYSTEM CONTROLS
+                </div>
+
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px' }}>
+                  <span style={{ fontSize: '1.1rem', color: 'var(--crt-text-secondary)' }}>AUDIO:</span>
+                  <button onClick={() => { playClick(); toggleMute(); }} className="btn-retro" style={{ fontSize: '0.9rem', width: '130px', padding: '8px' }}>
+                    {isMuted ? 'UNMUTE' : 'MUTE'}
+                  </button>
+                </div>
+
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px' }}>
+                  <span style={{ fontSize: '1.1rem', color: 'var(--crt-text-secondary)' }}>INSTALL:</span>
+                  <InstallPromotion 
+                    isInstallable={isInstallable} 
+                    isInstalled={isInstalled} 
+                    installApp={installApp} 
+                  />
+                </div>
+
+                {displayName && displayName.toUpperCase() === 'HYPNO' && (
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px' }}>
+                    <span style={{ fontSize: '1.1rem', color: 'var(--crt-text-secondary)' }}>SANDBOX:</span>
+                    <button 
+                      onClick={() => { playClick(); setIsSandbox(true); setShowSettings(false); }} 
+                      className="btn-retro" 
+                      style={{ fontSize: '0.9rem', width: '130px', padding: '8px' }}
+                    >
+                      LAUNCH
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {/* Section 3: Account (at the bottom) */}
               {userId && (
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px' }}>
-                  <span style={{ fontSize: '1.1rem', color: 'var(--crt-text-secondary)' }}>ACCOUNT:</span>
-                  <button
-                    onClick={() => { playClick(); logoutUser(); setShowSettings(false); }}
-                    className="btn-retro"
-                    style={{
-                      padding: '8px 8px',
-                      fontSize: '0.9rem',
-                      width: '130px',
-                      borderColor: 'var(--color-danger)',
-                      color: 'var(--color-danger)',
-                      boxShadow: 'none'
-                    }}
-                  >
-                    LOGOUT
-                  </button>
-                </div>
-              )}
-
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px' }}>
-                <span style={{ fontSize: '1.1rem', color: 'var(--crt-text-secondary)' }}>INSTALL:</span>
-                <InstallPromotion 
-                  isInstallable={isInstallable} 
-                  isInstalled={isInstalled} 
-                  installApp={installApp} 
-                />
-              </div>
-
-              {displayName && displayName.toUpperCase() === 'HYPNO' && (
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px' }}>
-                  <span style={{ fontSize: '1.1rem', color: 'var(--crt-text-secondary)' }}>SANDBOX:</span>
-                  <button 
-                    onClick={() => { playClick(); setIsSandbox(true); setShowSettings(false); }} 
-                    className="btn-retro" 
-                    style={{ fontSize: '0.9rem', width: '130px', padding: '8px' }}
-                  >
-                    LAUNCH
-                  </button>
-                </div>
+                <>
+                  <hr style={{ border: '0', borderTop: '1px dashed var(--crt-border-muted)', margin: '4px 0' }} />
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                    <div style={{ fontSize: '0.65rem', color: 'var(--crt-text-muted)', fontFamily: 'Press Start 2P, monospace', marginBottom: '4px' }}>
+                      // USER SESSION
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px' }}>
+                      <span style={{ fontSize: '1.1rem', color: 'var(--crt-text-secondary)' }}>ACCOUNT:</span>
+                      <button
+                        onClick={() => { playClick(); logoutUser(); setShowSettings(false); }}
+                        className="btn-retro"
+                        style={{
+                          padding: '8px 8px',
+                          fontSize: '0.9rem',
+                          width: '130px',
+                          borderColor: 'var(--color-danger)',
+                          color: 'var(--color-danger)',
+                          boxShadow: 'none'
+                        }}
+                      >
+                        LOGOUT
+                      </button>
+                    </div>
+                  </div>
+                </>
               )}
             </div>
             
             <button 
               onClick={() => { playClick(); setShowSettings(false); }} 
               className="btn-retro" 
-              style={{ marginTop: '28px', width: '100%', borderColor: 'var(--crt-border-muted)', fontSize: '1.05rem' }}
+              style={{ marginTop: '24px', width: '100%', borderColor: 'var(--crt-border-muted)', fontSize: '1.05rem' }}
             >
               CLOSE
             </button>

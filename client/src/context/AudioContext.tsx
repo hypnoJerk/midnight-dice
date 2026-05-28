@@ -24,11 +24,19 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     });
   };
 
+  const audioCtxRef = React.useRef<AudioContext | null>(null);
+
   const getAudioContext = (): AudioContext | null => {
     if (isMuted || typeof window === 'undefined') return null;
-    const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
-    if (!AudioContextClass) return null;
-    return new AudioContextClass();
+    if (!audioCtxRef.current) {
+      const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+      if (!AudioContextClass) return null;
+      audioCtxRef.current = new AudioContextClass();
+    }
+    if (audioCtxRef.current.state === 'suspended') {
+      audioCtxRef.current.resume();
+    }
+    return audioCtxRef.current;
   };
 
   // 1. Procedural 8-bit bip click
