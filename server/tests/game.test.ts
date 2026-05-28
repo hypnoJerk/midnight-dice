@@ -183,5 +183,56 @@ describe('Game Engine Scoring & Qualification Rules', () => {
       expect(room.gameState).toBe('GAME_OVER');
       expect(room.winners).toEqual(['user-host']);
     });
+
+    it('should rotate player turn order so that the winner of the previous round goes first', () => {
+      const manager = new RoomManager();
+
+      // Host Alice creates room, Bob joins, Charlie joins
+      const room = manager.createRoom('user-alice', 'Alice');
+      manager.joinRoom('user-bob', 'Bob', room.code);
+      manager.joinRoom('user-charlie', 'Charlie', room.code);
+
+      expect(room.players.map(p => p.id)).toEqual(['user-alice', 'user-bob', 'user-charlie']);
+
+      // Start the match
+      manager.startGame(room.code, 'user-alice');
+
+      // Let's make Bob (index 1) win round 1.
+      // Alice plays first and gets a score
+      room.players[0].score = 15;
+      room.players[0].diceKept = [1, 4, 3, 3, 3, 6];
+      room.players[0].isDQ = false;
+      room.turnTransition = { playerName: 'Alice', score: 15, isDQ: false };
+      manager.completeTurnTransition(room.code);
+
+      // Bob plays next and gets a higher score
+      room.players[1].score = 22;
+      room.players[1].diceKept = [1, 4, 5, 5, 6, 6];
+      room.players[1].isDQ = false;
+      room.turnTransition = { playerName: 'Bob', score: 22, isDQ: false };
+      manager.completeTurnTransition(room.code);
+
+      // Charlie plays last and gets a lower score
+      room.players[2].score = 18;
+      room.players[2].diceKept = [1, 4, 4, 4, 5, 5];
+      room.players[2].isDQ = false;
+      room.turnTransition = { playerName: 'Charlie', score: 18, isDQ: false };
+      
+      // Completing the last turn transition should resolve Bob as winner and set roundTransition
+      manager.completeTurnTransition(room.code);
+
+      expect(room.players.find(p => p.id === 'user-bob')?.roundWins).toBe(1);
+      expect(room.roundTransition).toBeDefined();
+      expect(room.roundTransition?.winnerName).toBe('Bob');
+      expect(room.roundTransition?.winnerId).toBe('user-bob');
+
+      // Now complete the round transition to round 2
+      manager.completeRoundTransition(room.code);
+
+      // Verify that Bob is now index 0, followed by Charlie, and Alice wraps around to the end
+      expect(room.players.map(p => p.id)).toEqual(['user-bob', 'user-charlie', 'user-alice']);
+      expect(room.activePlayerIndex).toBe(0);
+      expect(room.players[0].score).toBe(0); // Score reset
+    });
   });
 });

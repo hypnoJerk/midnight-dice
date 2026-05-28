@@ -35,6 +35,7 @@ export interface Room {
   roundTransition?: {        // Transition info for round completion
     roundNumber: number;
     winnerName: string;
+    winnerId: string;
   } | null;
   rematch?: {
     timerEndsAt: number;     // Millisecond timestamp when the 30s timer expires
@@ -70,6 +71,7 @@ export interface RoomSyncPayload {
   roundTransition?: {
     roundNumber: number;
     winnerName: string;
+    winnerId: string;
   } | null;
   rematch?: {
     timerEndsAt: number;

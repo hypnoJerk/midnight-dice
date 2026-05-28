@@ -442,7 +442,8 @@ export class RoomManager {
             // Show round completion transition
             room.roundTransition = {
               roundNumber: room.currentRound,
-              winnerName: winner.name
+              winnerName: winner.name,
+              winnerId: winner.id
             };
           }
         }
@@ -507,7 +508,8 @@ export class RoomManager {
             // Show round completion transition
             room.roundTransition = {
               roundNumber: room.currentRound,
-              winnerName: winner.name
+              winnerName: winner.name,
+              winnerId: winner.id
             };
           }
         }
@@ -523,6 +525,14 @@ export class RoomManager {
     if (!room) return undefined;
 
     if (room.roundTransition) {
+      const winnerId = room.roundTransition.winnerId;
+      const winnerIndex = room.players.findIndex(p => p.id === winnerId);
+      if (winnerIndex > 0) {
+        const part1 = room.players.slice(winnerIndex);
+        const part2 = room.players.slice(0, winnerIndex);
+        room.players = [...part1, ...part2];
+      }
+
       room.roundTransition = null;
       room.currentRound += 1;
 
