@@ -39,6 +39,11 @@ app.use(express.json());
 const roomManager = new RoomManager(async (room) => {
   console.log(`[Game Over] Room ${room.code} completed. Saving match results...`);
   
+  if (room.players.length < 2) {
+    console.log(`[Game Over] Room ${room.code} completed. Solo match detected (1 player). Skipping database recording.`);
+    return;
+  }
+  
   try {
     const winnerId = room.winners.length === 1 ? room.winners[0] : null;
     const winningScore = room.players.find(p => p.id === winnerId)?.score 

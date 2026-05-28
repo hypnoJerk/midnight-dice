@@ -18,6 +18,7 @@ build/
 
 # ---- Vite / PWA ----
 client/dist/
+client/dev-dist/
 client/.vite/
 
 # ---- Drizzle migrations (auto-generated, keep the schema source) ----
