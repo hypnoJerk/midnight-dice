@@ -26,7 +26,7 @@ interface DiceSceneProps {
   diceCount: number;
   targetValues?: number[]; // Optional target values (for Sandbox FORCE_ROLL override steering)
   onTapDie: (index: number) => void;
-  onRollComplete?: (values: number[]) => void;
+  onRollComplete?: (values: number[], isStacked: boolean) => void;
   rollId: number;
   preset: 'green' | 'amber';
   debugConfig?: DebugConfig;
@@ -138,6 +138,8 @@ export function DiceScene({
   // Registry of references to the dice groups for camera centroid tracking
   const diceRefs = useRef<Record<number, React.RefObject<THREE.Group>>>({});
 
+  const diceScale = debugConfig ? debugConfig.diceScale : 0.80;
+
   // Reset tracking state on every new roll trigger
   useEffect(() => {
     settledValuesRef.current = {};
@@ -151,6 +153,21 @@ export function DiceScene({
     }
   };
 
+  const checkStacked = () => {
+    const heights = Object.keys(diceRefs.current).map(key => {
+      const idx = parseInt(key);
+      const ref = diceRefs.current[idx];
+      if (ref?.current) {
+        const p = new THREE.Vector3();
+        ref.current.getWorldPosition(p);
+        return p.y;
+      }
+      return -0.5;
+    });
+    // Floor is at y = -0.5. Check if any settled die's center is higher than floor_y + diceScale * 1.0
+    return heights.some(y => y - (-0.5) > diceScale * 1.0);
+  };
+
   const handleDieSettle = (idx: number, val: number) => {
     // Record the settled value for this die index
     settledValuesRef.current[idx] = val;
@@ -159,8 +176,9 @@ export function DiceScene({
     if (Object.keys(settledValuesRef.current).length === diceCount && !hasTriggeredCompleteRef.current) {
       hasTriggeredCompleteRef.current = true;
       const finalValues = Array.from({ length: diceCount }).map((_, i) => settledValuesRef.current[i]);
+      const stackedDetected = checkStacked();
       if (onRollComplete) {
-        onRollComplete(finalValues);
+        onRollComplete(finalValues, stackedDetected);
       }
     }
   };
@@ -180,7 +198,6 @@ export function DiceScene({
 
   const ambientIntensity = debugConfig ? debugConfig.ambientIntensity : 2.30;
   const lightY = debugConfig ? debugConfig.lightY : 10.5;
-  const diceScale = debugConfig ? debugConfig.diceScale : 0.80;
 
   const containerBg = theme === 'light' 
     ? 'var(--crt-bg-panel)' 

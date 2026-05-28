@@ -235,4 +235,59 @@ describe('Game Engine Scoring & Qualification Rules', () => {
       expect(room.players[0].score).toBe(0); // Score reset
     });
   });
+
+  describe('RoomManager Stacked Dice & Reroll Rules', () => {
+    it('should correctly increment stacked roll counts and reset them on valid rolls', () => {
+      const manager = new RoomManager();
+      const room = manager.createRoom('user-alice', 'Alice');
+      manager.startGame(room.code, 'user-alice');
+
+      // 1. Roll a stacked roll
+      manager.submitRollActivePlayer(room.code, 'user-alice', [1, 2, 3, 4, 5, 6], true);
+      expect(room.players[0].stackedRerollsCount).toBe(1);
+      expect(room.players[0].isCurrentRollStacked).toBe(true);
+
+      // 2. Roll another stacked roll
+      manager.submitRollActivePlayer(room.code, 'user-alice', [1, 2, 3, 4, 5, 6], true);
+      expect(room.players[0].stackedRerollsCount).toBe(2);
+      expect(room.players[0].isCurrentRollStacked).toBe(true);
+
+      // 3. Roll a valid roll -> should reset count
+      manager.submitRollActivePlayer(room.code, 'user-alice', [1, 2, 3, 4, 5, 6], false);
+      expect(room.players[0].stackedRerollsCount).toBe(0);
+      expect(room.players[0].isCurrentRollStacked).toBe(false);
+    });
+
+    it('should disqualify the player if they roll stacked dice 3 times in a row', () => {
+      const manager = new RoomManager();
+      const room = manager.createRoom('user-alice', 'Alice');
+      manager.startGame(room.code, 'user-alice');
+
+      // Roll 3 stacked dice rolls in a row
+      manager.submitRollActivePlayer(room.code, 'user-alice', [1, 2, 3, 4, 5, 6], true);
+      manager.submitRollActivePlayer(room.code, 'user-alice', [1, 2, 3, 4, 5, 6], true);
+      manager.submitRollActivePlayer(room.code, 'user-alice', [1, 2, 3, 4, 5, 6], true);
+
+      expect(room.players[0].stackedRerollsCount).toBe(3);
+      expect(room.players[0].isDQ).toBe(true);
+      expect(room.players[0].score).toBe(0);
+      expect(room.players[0].diceActive).toEqual([]);
+      expect(room.turnTransition).toBeDefined();
+      expect(room.turnTransition?.isDQ).toBe(true);
+    });
+
+    it('should reset isCurrentRollStacked once dice are kept', () => {
+      const manager = new RoomManager();
+      const room = manager.createRoom('user-alice', 'Alice');
+      manager.startGame(room.code, 'user-alice');
+
+      // 1. Submit a valid roll (isCurrentRollStacked will be false, but active dice will be populated)
+      manager.submitRollActivePlayer(room.code, 'user-alice', [1, 2, 3, 4, 5, 6], false);
+      expect(room.players[0].isCurrentRollStacked).toBe(false);
+
+      // 2. Keep some dice
+      manager.keepActivePlayer(room.code, 'user-alice', [0, 1]); // keep first two dice
+      expect(room.players[0].isCurrentRollStacked).toBe(false);
+    });
+  });
 });

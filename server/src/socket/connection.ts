@@ -165,9 +165,9 @@ export function initializeSockets(io: Server, roomManager: RoomManager) {
     });
 
     // 4b. Turn Roll Settled (Submits physical results after physics settles)
-    socket.on('turn:roll:settled', ({ roomCode, userId, dice }: { roomCode: string; userId: string; dice: number[] }) => {
+    socket.on('turn:roll:settled', ({ roomCode, userId, dice, isStacked }: { roomCode: string; userId: string; dice: number[]; isStacked?: boolean }) => {
       try {
-        const room = roomManager.submitRollActivePlayer(roomCode, userId, dice);
+        const room = roomManager.submitRollActivePlayer(roomCode, userId, dice, isStacked);
         
         // Send confirmed rolled dice faces directly to active player
         socket.emit('roll:result', { dice });

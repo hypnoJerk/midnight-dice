@@ -94,6 +94,7 @@ export function GamePlayView({
   }, [isMeDq]);
 
   const handleTapDie = (index: number) => {
+    if (activePlayer?.isCurrentRollStacked) return;
     playClick();
     setSelectedIndexes(prev => {
       if (prev.includes(index)) {
@@ -169,6 +170,25 @@ export function GamePlayView({
                 * YOUR TURN TO ROLL *
               </div>
 
+              {activePlayer?.isCurrentRollStacked && (
+                <div style={{
+                  color: 'var(--color-danger, #ff3333)',
+                  borderColor: 'var(--color-danger, #ff3333)',
+                  borderWidth: '1px',
+                  borderStyle: 'dashed',
+                  padding: '8px',
+                  textAlign: 'center',
+                  fontFamily: 'Press Start 2P, monospace',
+                  fontSize: '0.6rem',
+                  animation: 'pulse 1.5s infinite',
+                  background: 'rgba(255, 51, 51, 0.1)',
+                  borderRadius: '4px',
+                  textShadow: 'var(--color-danger-glow)'
+                }}>
+                  *** STACKED DIE DETECTED - REROLL REQUIRED ({activePlayer.stackedRerollsCount}/3) ***
+                </div>
+              )}
+
               {/* Large Interactive Active Score Readout */}
               <div className="active-running-score">
                 SCORE: {getRunningScore(activePlayer?.diceKept || [])}
@@ -179,9 +199,9 @@ export function GamePlayView({
                 rollId={rollId}
                 targetValues={isPhysicsRolling ? undefined : (activeRoll || undefined)}
                 onTapDie={handleTapDie}
-                onRollComplete={(values) => {
+                onRollComplete={(values, isStacked) => {
                   if (isPhysicsRolling) {
-                    submitRollResults(values);
+                    submitRollResults(values, isStacked);
                   }
                 }}
                 preset={preset}
@@ -192,20 +212,20 @@ export function GamePlayView({
               <div style={{ display: 'flex', gap: '12px', width: '100%' }}>
                 <button 
                   onClick={handleRoll} 
-                  disabled={isPhysicsRolling || (activeRoll !== null && activeRoll.length > 0)}
+                  disabled={isPhysicsRolling || (!activePlayer?.isCurrentRollStacked && activeRoll !== null && activeRoll.length > 0)}
                   className="btn-retro"
                   style={{ flex: 1 }}
                 >
-                  ROLL DICE
+                  {activePlayer?.isCurrentRollStacked ? 'REROLL' : 'ROLL DICE'}
                 </button>
                 <button 
                   onClick={handleKeep} 
-                  disabled={isPhysicsRolling || selectedIndexes.length === 0}
+                  disabled={isPhysicsRolling || selectedIndexes.length === 0 || activePlayer?.isCurrentRollStacked}
                   className="btn-retro"
                   style={{ 
                     flex: 1, 
-                    borderColor: (!isPhysicsRolling && selectedIndexes.length > 0) ? 'var(--crt-accent)' : 'var(--crt-border-muted)',
-                    color: (!isPhysicsRolling && selectedIndexes.length > 0) ? 'var(--crt-accent)' : 'var(--crt-text-muted)'
+                    borderColor: (!isPhysicsRolling && selectedIndexes.length > 0 && !activePlayer?.isCurrentRollStacked) ? 'var(--crt-accent)' : 'var(--crt-border-muted)',
+                    color: (!isPhysicsRolling && selectedIndexes.length > 0 && !activePlayer?.isCurrentRollStacked) ? 'var(--crt-accent)' : 'var(--crt-text-muted)'
                   }}
                 >
                   LOCK SELECTION ({selectedIndexes.length})
@@ -236,7 +256,13 @@ export function GamePlayView({
                 [SPECTATING ACTIVE DICE BOARD]
               </div>
               <div style={{ fontSize: '1.25rem', color: 'var(--crt-text-secondary)', textAlign: 'center' }}>
-                Waiting for {activePlayer?.name || 'player'} to throw...
+                {activePlayer?.isCurrentRollStacked ? (
+                  <span style={{ color: 'var(--color-danger, #ff3333)', animation: 'pulse 1.5s infinite' }}>
+                    Dice Stacked! {activePlayer.name} must REROLL... (Attempt {activePlayer.stackedRerollsCount}/3)
+                  </span>
+                ) : (
+                  `Waiting for ${activePlayer?.name || 'player'} to throw...`
+                )}
               </div>
               <div style={{
                 fontSize: '3rem',
@@ -354,15 +380,19 @@ export function GamePlayView({
                 diceCount={diceCount}
                 rollId={activePlayer?.rollsCount || 0}
                 onTapDie={() => {}} // No tapping in shootout
-                onRollComplete={(values) => {
+                onRollComplete={(values, isStacked) => {
                   if (isPhysicsRolling) {
-                    submitRollResults(values);
+                    submitRollResults(values, isStacked);
                   }
                 }}
                 preset={preset}
               />
-              <button onClick={handleRoll} disabled={isPhysicsRolling || !!activeRoll} className="btn-retro">
-                ROLL ALL SIX DICE
+              <button 
+                onClick={handleRoll} 
+                disabled={isPhysicsRolling || (!activePlayer?.isCurrentRollStacked && !!activeRoll)} 
+                className="btn-retro"
+              >
+                {activePlayer?.isCurrentRollStacked ? 'REROLL' : 'ROLL ALL SIX DICE'}
               </button>
             </div>
           ) : (

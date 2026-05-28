@@ -16,6 +16,8 @@ export interface Player {
   rollsCount: number;        // Number of rolls taken in the current turn
   shootoutScore?: number;    // Score during a tie-breaker (sum of all 6 dice)
   roundWins: number;         // Number of round wins (best 2 out of 3)
+  stackedRerollsCount: number; // Consecutive stacked rolls in the current turn
+  isCurrentRollStacked: boolean; // Whether the current active roll has stacked dice
 }
 
 export interface Room {

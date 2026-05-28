@@ -94,7 +94,9 @@ export class RoomManager {
       diceKept: [],
       diceActive: [],
       rollsCount: 0,
-      roundWins: 0
+      roundWins: 0,
+      stackedRerollsCount: 0,
+      isCurrentRollStacked: false
     };
 
     const room: Room = {
@@ -149,7 +151,9 @@ export class RoomManager {
         diceKept: [],
         diceActive: [],
         rollsCount: 0,
-        roundWins: 0
+        roundWins: 0,
+        stackedRerollsCount: 0,
+        isCurrentRollStacked: false
       };
       room.players.push(newPlayer);
     }
@@ -221,6 +225,8 @@ export class RoomManager {
       player.rollsCount = 0;
       player.shootoutScore = undefined;
       player.roundWins = 0;
+      player.stackedRerollsCount = 0;
+      player.isCurrentRollStacked = false;
     }
 
     room.gameState = 'PLAYING';
@@ -277,7 +283,7 @@ export class RoomManager {
   /**
    * Handles submitting the physical dice values rolled by the client.
    */
-  public submitRollActivePlayer(roomCode: string, userId: string, diceValues: number[]): Room {
+  public submitRollActivePlayer(roomCode: string, userId: string, diceValues: number[], isStacked?: boolean): Room {
     const room = this.rooms.get(roomCode.toUpperCase());
     if (!room) throw new Error('Room not found');
 
@@ -293,21 +299,62 @@ export class RoomManager {
       }
 
       activePlayer.diceActive = diceValues;
+
+      if (isStacked) {
+        activePlayer.stackedRerollsCount = (activePlayer.stackedRerollsCount || 0) + 1;
+        activePlayer.isCurrentRollStacked = true;
+
+        if (activePlayer.stackedRerollsCount >= 3) {
+          activePlayer.isDQ = true;
+          activePlayer.score = 0;
+          activePlayer.diceActive = [];
+          
+          room.turnTransition = {
+            playerName: activePlayer.name,
+            score: 0,
+            isDQ: true
+          };
+        }
+      } else {
+        activePlayer.stackedRerollsCount = 0;
+        activePlayer.isCurrentRollStacked = false;
+      }
       return room;
     } else if (room.gameState === 'SHOOTOUT') {
       if (diceValues.length !== 6) {
         throw new Error(`Invalid dice count submitted. Expected 6, got ${diceValues.length}`);
       }
 
-      activePlayer.shootoutScore = calculateShootoutScore(diceValues);
+      activePlayer.diceActive = diceValues;
 
-      // Defer shootout turn advancement to show transition screen
-      room.turnTransition = {
-        playerName: activePlayer.name,
-        score: activePlayer.shootoutScore,
-        isDQ: false,
-        isShootout: true
-      };
+      if (isStacked) {
+        activePlayer.stackedRerollsCount = (activePlayer.stackedRerollsCount || 0) + 1;
+        activePlayer.isCurrentRollStacked = true;
+
+        if (activePlayer.stackedRerollsCount >= 3) {
+          activePlayer.shootoutScore = 0;
+          activePlayer.diceActive = [];
+          
+          room.turnTransition = {
+            playerName: activePlayer.name,
+            score: 0,
+            isDQ: true,
+            isShootout: true
+          };
+        }
+      } else {
+        activePlayer.stackedRerollsCount = 0;
+        activePlayer.isCurrentRollStacked = false;
+        activePlayer.shootoutScore = calculateShootoutScore(diceValues);
+
+        // Defer shootout turn advancement to show transition screen
+        room.turnTransition = {
+          playerName: activePlayer.name,
+          score: activePlayer.shootoutScore,
+          isDQ: false,
+          isShootout: true
+        };
+      }
 
       return room;
     } else {
@@ -355,6 +402,7 @@ export class RoomManager {
 
     // Clear active roll array
     activePlayer.diceActive = [];
+    activePlayer.isCurrentRollStacked = false;
 
     // Check if the player's turn is complete (all 6 dice set aside)
     if (activePlayer.diceKept.length === 6) {
@@ -428,7 +476,7 @@ export class RoomManager {
         if (winner) {
           winner.roundWins += 1;
           
-          if (winner.roundWins >= 3) {
+          if (winner.roundWins >= 2) {
             // Complete game over
             room.gameState = 'GAME_OVER';
             room.activePlayerIndex = -1;
@@ -546,6 +594,8 @@ export class RoomManager {
         player.diceActive = [];
         player.rollsCount = 0;
         player.shootoutScore = undefined;
+        player.stackedRerollsCount = 0;
+        player.isCurrentRollStacked = false;
       }
 
       // Start new round from first player
@@ -655,6 +705,8 @@ export class RoomManager {
       player.rollsCount = 0;
       player.shootoutScore = undefined;
       player.roundWins = 0;
+      player.stackedRerollsCount = 0;
+      player.isCurrentRollStacked = false;
     }
 
     // Ensure host validity

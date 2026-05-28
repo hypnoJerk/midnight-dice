@@ -153,10 +153,10 @@ export function useGame() {
     socket.emit('turn:roll', { roomCode: room.code, userId });
   }, [socket, room, userId]);
 
-  const submitRollResults = useCallback((dice: number[]) => {
+  const submitRollResults = useCallback((dice: number[], isStacked?: boolean) => {
     if (!socket || !room || !userId) return;
     setError(null);
-    socket.emit('turn:roll:settled', { roomCode: room.code, userId, dice });
+    socket.emit('turn:roll:settled', { roomCode: room.code, userId, dice, isStacked });
   }, [socket, room, userId]);
 
   const keepDice = useCallback((diceIndexes: number[]) => {
